@@ -1,0 +1,219 @@
+﻿@page "/matches/edit/{id:int}"
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+
+@if (Match == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="row justify-content-center">
+        <div class="col-lg-12 col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Edit Match</h3>
+                </div>
+                <div class="card-body">
+                    @if (Match == null)
+                    {
+                        <p>Loading...</p>
+                    }
+                    else
+                    {
+                        <EditForm method="post" Model="Match" OnValidSubmit="SaveMatch" FormName="edit" Enhance>
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <!-- Kickoff Details and Score -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label for="kickoffDate" class="form-label">Kickoff Date:</label>
+                                    <InputDate id="kickoffDate" @bind-Value="KickoffDate" class="form-control" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="matchTime" class="form-label">Match Time:</label>
+                                    <select id="matchTime" class="form-select" @bind="KickoffTime">
+                                        <option value="19:00">7:00 PM</option>
+                                        <option value="19:30">7:30 PM</option>
+                                        <option value="20:00">8:00 PM</option>
+                                        <option value="20:30">8:30 PM</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row mb-4 align-items-center">
+                                <div class="col-md-4 text-end">
+                                    <label for="homeTeamGoals" class="form-label">@Match.HomeTeam?.Name</label>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <InputNumber id="homeTeamGoals" @bind-Value="Match.HomeTeamGoals" class="form-control text-center" placeholder="0" />
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <InputNumber id="awayTeamGoals" @bind-Value="Match.AwayTeamGoals" class="form-control text-center" placeholder="0" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="awayTeamGoals" class="form-label">@Match.AwayTeam?.Name</label>
+                                </div>
+                            </div>
+
+                            <!-- Home Team Stats -->
+                            <h4 class="mt-4">Home Team: @Match.HomeTeam?.Name</h4>
+                            @if (Match.HomeTeam?.Players != null)
+                            {
+                                <table class="table table-striped table-hover table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Player</th>
+                                            <th>Appearance</th>
+                                            <th class="numeric-column">Goals</th>
+                                            <th class="numeric-column">Assists</th>
+                                            <th>Yellow Card</th>
+                                            <th>Red Card</th>
+                                            <th class="numeric-column">Penalty Saves</th>
+                                            <th>Clean Sheet</th>
+                                            <th class="numeric-column">Penalty Missed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var player in Match.HomeTeam.Players)
+                                        {
+                                            var stat = GetOrCreateStat(player.Id);
+                                            <tr>
+                                                <td>@player.Name</td>
+                                                <td><InputCheckbox @bind-Value="stat.Appearance" class="form-check-input" /></td>
+                                                <td><InputNumber @bind-Value="stat.Goals" class="form-control numeric-column" placeholder="0" /></td>
+                                                <td><InputNumber @bind-Value="stat.Assists" class="form-control numeric-column" placeholder="0" /></td>
+                                                <td><InputCheckbox @bind-Value="stat.YellowCard" class="form-check-input" /></td>
+                                                <td><InputCheckbox @bind-Value="stat.RedCard" class="form-check-input" /></td>
+                                                <td><InputNumber @bind-Value="stat.PenaltySaves" class="form-control numeric-column" placeholder="0" /></td>
+                                                <td><InputCheckbox @bind-Value="stat.CleanSheet" class="form-check-input" /></td>
+                                                <td><InputNumber @bind-Value="stat.PenaltyMissed" class="form-control numeric-column" placeholder="0" /></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+
+                            <!-- Away Team Stats -->
+                            <h4 class="mt-4">Away Team: @Match.AwayTeam?.Name</h4>
+                            @if (Match.AwayTeam?.Players != null)
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Player</th>
+                                                <th>Appearance</th>
+                                                <th class="numeric-column">Goals</th>
+                                                <th class="numeric-column">Assists</th>
+                                                <th>Yellow Card</th>
+                                                <th>Red Card</th>
+                                                <th class="numeric-column">Penalty Saves</th>
+                                                <th>Clean Sheet</th>
+                                                <th class="numeric-column">Penalty Missed</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var player in Match.AwayTeam.Players)
+                                            {
+                                                var stat = GetOrCreateStat(player.Id);
+                                                <tr>
+                                                    <td>@player.Name</td>
+                                                    <td><InputCheckbox @bind-Value="stat.Appearance" class="form-check-input" /></td>
+                                                    <td><InputNumber @bind-Value="stat.Goals" class="form-control" placeholder="0" /></td>
+                                                    <td><InputNumber @bind-Value="stat.Assists" class="form-control" placeholder="0" /></td>
+                                                    <td><InputCheckbox @bind-Value="stat.YellowCard" class="form-check-input" /></td>
+                                                    <td><InputCheckbox @bind-Value="stat.RedCard" class="form-check-input" /></td>
+                                                    <td><InputNumber @bind-Value="stat.PenaltySaves" class="form-control" placeholder="0" /></td>
+                                                    <td><InputCheckbox @bind-Value="stat.CleanSheet" class="form-check-input" /></td>
+                                                    <td><InputNumber @bind-Value="stat.PenaltyMissed" class="form-control" placeholder="0" /></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+
+                            <!-- Buttons -->
+                            <div class="mt-4 text-end">
+                                <button class="btn btn-primary me-2" type="submit">Save</button>
+                                <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+                            </div>
+                        </EditForm>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private LocalFantasyLeagueContext context = default!;
+    private Match? Match { get; set; }
+    private DateTime KickoffDate { get; set; }
+    private string KickoffTime { get; set; } = "00:00";
+
+    protected override async Task OnInitializedAsync()
+    {
+        context = DbFactory.CreateDbContext();
+        Match = await context.Matches
+        .Include(m => m.HomeTeam).ThenInclude(t => t.Players)
+        .Include(m => m.AwayTeam).ThenInclude(t => t.Players)
+        .Include(m => m.Stats)
+        .FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Match != null)
+        {
+            KickoffDate = Match.Kickoff.Date;
+            KickoffTime = Match.Kickoff.ToString("HH:mm");
+        }
+    }
+
+    private PerformanceStat GetOrCreateStat(int playerId)
+    {
+        var stat = Match?.Stats.FirstOrDefault(s => s.PlayerId == playerId);
+        if (stat == null && Match != null)
+        {
+            stat = new PerformanceStat
+                {
+                    MatchId = Match.Id,
+                    PlayerId = playerId,
+                    Appearance = false,
+                    Goals = 0,
+                    Assists = 0,
+                    YellowCard = false,
+                    RedCard = false,
+                    PenaltySaves = 0,
+                    CleanSheet = false,
+                    PenaltyMissed = 0
+                };
+            Match.Stats.Add(stat);
+        }
+        return stat!;
+    }
+
+    private async Task SaveMatch()
+    {
+        if (Match != null)
+        {
+            // Combine the date and time into the Match.Kickoff property
+            Match.Kickoff = DateTime.Parse($"{KickoffDate:yyyy-MM-dd} {KickoffTime}");
+
+            context.Matches.Update(Match);
+            await context.SaveChangesAsync();
+            NavigationManager.NavigateTo("/matches");
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/matches");
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

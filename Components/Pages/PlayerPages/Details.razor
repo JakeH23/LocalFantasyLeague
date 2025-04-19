@@ -1,0 +1,247 @@
+﻿@page "/players/details/{id:int}"
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<h3 class="text-center my-4">Player Details</h3>
+
+@if (Player == null)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container">
+        <!-- Player Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>
+                    <button class="btn btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#playerInfo" aria-expanded="true" aria-controls="playerInfo">
+                        Player Information
+                    </button>
+                </h4>
+            </div>
+            <div id="playerInfo" class="collapse show">
+                <div class="card-body">
+                    <p><strong>Name:</strong> @Player.Name</p>
+                    <p><strong>Position:</strong> @Player.Position</p>
+                    <p><strong>Team:</strong> @(Player.Team?.Name ?? "No Team")</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Match Stats -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>
+                    <button class="btn btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#matchStats" aria-expanded="true" aria-controls="matchStats">
+                        Match Stats
+                    </button>
+                </h4>
+            </div>
+            <div id="matchStats" class="collapse show">
+                <div class="card-body">
+                    @if (PaginatedStats.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover table-bordered">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Match</th>
+                                        <th>Kickoff</th>
+                                        <th>Appearances</th>
+                                        <th>Goals</th>
+                                        <th>Assists</th>
+                                        <th>Yellow Cards</th>
+                                        <th>Red Cards</th>
+                                        <th>Penalty Saves</th>
+                                        <th>Clean Sheets</th>
+                                        <th>Penalty Missed</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var stat in PaginatedStats)
+                                    {
+                                        <tr>
+                                            <td>@stat.Match?.HomeTeam?.Name vs @stat.Match?.AwayTeam?.Name</td>
+                                            <td>@stat.Match?.Kickoff.ToString("g")</td>
+                                            <td>@stat.Appearance</td>
+                                            <td>@stat.Goals</td>
+                                            <td>@stat.Assists</td>
+                                            <td>@stat.YellowCard</td>
+                                            <td>@stat.RedCard</td>
+                                            <td>@stat.PenaltySaves</td>
+                                            <td>@stat.CleanSheet</td>
+                                            <td>@stat.PenaltyMissed</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-center mt-3">
+                            <nav>
+                                <ul class="pagination">
+                                    <li class="page-item @(IsFirstPage ? "disabled" : "")">
+                                        <button class="page-link" @onclick="PreviousPage" disabled="@IsFirstPage">
+                                            <i class="bi bi-arrow-left"></i> Previous
+                                        </button>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">Page @CurrentPage of @TotalPages</span>
+                                    </li>
+                                    <li class="page-item @(IsLastPage ? "disabled" : "")">
+                                        <button class="page-link" @onclick="NextPage" disabled="@IsLastPage">
+                                            Next <i class="bi bi-arrow-right"></i>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+                    else
+                    {
+                        <p>No match stats available for this player.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Combined Stats -->
+        <div class="card">
+            <div class="card-header">
+                <h4>
+                    <button class="btn btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#totalStats" aria-expanded="true" aria-controls="totalStats">
+                        Total Combined Stats
+                    </button>
+                </h4>
+            </div>
+            <div id="totalStats" class="collapse show">
+                <div class="card-body">
+                    <table class="table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Appearances</th>
+                                <th>Goals</th>
+                                <th>Assists</th>
+                                <th>Yellow Cards</th>
+                                <th>Red Cards</th>
+                                <th>Penalty Saves</th>
+                                <th>Clean Sheets</th>
+                                <th>Penalty Missed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>@TotalAppearances</td>
+                                <td>@TotalGoals</td>
+                                <td>@TotalAssists</td>
+                                <td>@TotalYellowCards</td>
+                                <td>@TotalRedCards</td>
+                                <td>@TotalPenaltySaves</td>
+                                <td>@TotalCleanSheets</td>
+                                <td>@TotalPenaltyMissed</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private LocalFantasyLeagueContext context = default!;
+    private Player? Player { get; set; }
+
+    // Filtering state
+    private DateTime? FilterDate { get; set; }
+    private string? FilterTeam { get; set; }
+    private int? FilterGoals { get; set; }
+    private int? FilterAssists { get; set; }
+
+    // Pagination state
+    private int CurrentPage { get; set; } = 1;
+    private int PageSize { get; set; } = 5;
+    private int TotalPages => (int)Math.Ceiling((double)(FilteredStats.Count()) / PageSize);
+    private bool IsFirstPage => CurrentPage == 1;
+    private bool IsLastPage => CurrentPage == TotalPages;
+
+    private IEnumerable<PerformanceStat> FilteredStats =>
+        Player?.PerformanceStats?
+            .Where(stat =>
+                (!FilterDate.HasValue || stat.Match?.Kickoff.Date == FilterDate.Value.Date) &&
+                (string.IsNullOrEmpty(FilterTeam) || stat.Match?.HomeTeam?.Name.Contains(FilterTeam, StringComparison.OrdinalIgnoreCase) == true || stat.Match?.AwayTeam?.Name.Contains(FilterTeam, StringComparison.OrdinalIgnoreCase) == true) &&
+                (!FilterGoals.HasValue || stat.Goals >= FilterGoals.Value) &&
+                (!FilterAssists.HasValue || stat.Assists >= FilterAssists.Value)
+            ) ?? Enumerable.Empty<PerformanceStat>();
+
+    private IEnumerable<PerformanceStat> PaginatedStats =>
+        FilteredStats
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize);
+
+    private int TotalAppearances => FilteredStats.Count(s => s.Appearance);
+    private int TotalGoals => FilteredStats.Sum(s => s.Goals); 
+    private int TotalAssists => FilteredStats.Sum(s => s.Assists);
+    private int TotalYellowCards => FilteredStats.Count(s => s.YellowCard);
+    private int TotalRedCards => FilteredStats.Count(s => s.RedCard);
+    private int TotalPenaltySaves => FilteredStats.Sum(s => s.PenaltySaves);
+    private int TotalCleanSheets => FilteredStats.Count(s => s.CleanSheet);
+    private int TotalPenaltyMissed => FilteredStats.Sum(s => s.PenaltyMissed);
+
+    protected override async Task OnInitializedAsync()
+    {
+        context = DbFactory.CreateDbContext();
+        Player = await context.Players
+            .Include(p => p.Team)
+            .Include(p => p.PerformanceStats)
+                .ThenInclude(ps => ps.Match)
+                .ThenInclude(m => m.HomeTeam)
+            .Include(p => p.PerformanceStats)
+                .ThenInclude(ps => ps.Match)
+                .ThenInclude(m => m.AwayTeam)
+            .FirstOrDefaultAsync(p => p.Id == Id);
+    }
+
+    private void ResetFilters()
+    {
+        FilterDate = null;
+        FilterTeam = null;
+        FilterGoals = null;
+        FilterAssists = null;
+        CurrentPage = 1; // Reset to the first page
+    }
+
+    private void NextPage()
+    {
+        if (!IsLastPage)
+        {
+            CurrentPage++;
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (!IsFirstPage)
+        {
+            CurrentPage--;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (context != null)
+        {
+            await context.DisposeAsync();
+        }
+    }
+}

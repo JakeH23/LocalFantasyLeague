@@ -1,0 +1,51 @@
+﻿@page "/players/create"
+@rendermode InteractiveServer
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject NavigationManager Nav
+
+<h3>Create Player</h3>
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm method="post" Model="Player" OnValidSubmit="Save" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            <InputText class="form-control mb-2" @bind-Value="Player.Name" placeholder="Player Name" />
+            <select class="form-select mb-2" @bind="Player.Position">
+                <option value="">-- Select Position --</option>
+                <option value="GK">Goalkeeper (GK)</option>
+                <option value="DEF">Defender (DEF)</option>
+                <option value="MID">Midfielder (MID)</option>
+                <option value="FWD">Forward (FWD)</option>
+            </select>
+            <select class="form-select mb-2" @bind="Player.TeamId">
+                <option value="">-- Select Team --</option>
+                @foreach (var team in Teams)
+                {
+                    <option value="@team.Id">@team.Name</option>
+                }
+            </select>
+            <!-- Save Button -->
+            <button type="submit" class="btn btn-primary">Save Player</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private Player Player = new();
+    private List<Team> Teams = new();
+    private LocalFantasyLeagueContext _dbContext = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _dbContext = await DbFactory.CreateDbContextAsync();
+        Teams = await _dbContext.Teams.ToListAsync();
+    }
+
+    private async Task Save()
+    {
+        _dbContext.Players.Add(Player);
+        await _dbContext.SaveChangesAsync();
+        Nav.NavigateTo("/players");
+    }
+}

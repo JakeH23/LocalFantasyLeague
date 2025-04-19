@@ -1,0 +1,89 @@
+﻿@page "/teams/create"
+@rendermode InteractiveServer
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject NavigationManager Nav
+
+<h3>Create Team</h3>
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm method="post" Model="Team" OnValidSubmit="Save" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+
+            <!-- Team Name Input -->
+            <div class="mb-3">
+                <label for="teamName" class="form-label">Team Name</label>
+                <InputText id="teamName" class="form-control" @bind-Value="Team.Name" placeholder="Enter team name" />
+            </div>
+
+            <!-- Player Selection -->
+            <h4>Add Players</h4>
+            <div class="mb-3">
+                <label for="playerSelect" class="form-label">Select Player</label>
+                <select id="playerSelect" class="form-select" @bind="SelectedPlayerId">
+                    <option value="">-- Select Player --</option>
+                    @foreach (var player in AvailablePlayers)
+                    {
+                        <option value="@player.Id">@player.Name</option>
+                    }
+                </select>
+            </div>
+            <button type="button" class="btn btn-secondary mb-3" @onclick="AddPlayer">Add Player</button>
+
+            <!-- Display Added Players -->
+            <h5>Players in Team</h5>
+            <ul class="list-group mb-3">
+                @foreach (var player in Team.Players)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        @player.Name
+                        <button type="button" class="btn btn-danger btn-sm" @onclick="() => RemovePlayer(player)">Remove</button>
+                    </li>
+                }
+            </ul>
+
+            <!-- Save Button -->
+            <button type="submit" class="btn btn-primary">Save Team</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private List<Player> AvailablePlayers = new();
+    private int? SelectedPlayerId;
+    private LocalFantasyLeagueContext _dbContext = null!;
+    private Team Team = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize the database context and fetch available players
+        _dbContext = await DbFactory.CreateDbContextAsync();
+        AvailablePlayers = await _dbContext.Players.ToListAsync();
+    }
+
+    private void AddPlayer()
+    {
+        if (SelectedPlayerId.HasValue)
+        {
+            var player = AvailablePlayers.FirstOrDefault(p => p.Id == SelectedPlayerId.Value);
+            if (player != null && !Team.Players.Any(p => p.Id == player.Id))
+            {
+                Team.Players.Add(player);
+            }
+        }
+    }
+
+    private void RemovePlayer(Player player)
+    {
+        Team.Players.Remove(player);
+    }
+
+    private async Task Save()
+    {
+        // Add the team to the database and save changes
+        _dbContext.Teams.Add(Team);
+        await _dbContext.SaveChangesAsync();
+        Nav.NavigateTo("/teams");
+    }
+}

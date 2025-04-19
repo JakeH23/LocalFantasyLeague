@@ -1,0 +1,148 @@
+﻿@page "/teams/details/{id:int}"
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<h3>Team Details</h3>
+
+@if (Team == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div>
+        <p><strong>Name:</strong> @Team.Name</p>
+    </div>
+    <div>
+        <h4>Players and Total Stats</h4>
+        @if (Team.Players != null && Team.Players.Any())
+        {
+            <table class="table table-bordered table-hover table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th>Player</th>
+                        <th>Appearances</th>
+                        <th>Goals</th>
+                        <th>Assists</th>
+                        <th>Yellow Cards</th>
+                        <th>Red Cards</th>
+                        <th>Penalty Saves</th>
+                        <th>Clean Sheets</th>
+                        <th>Penalty Missed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var player in Team.Players)
+                    {
+                        <tr>
+                            <td>@player.Name</td>
+                            <td class="numeric-column">@player.PerformanceStats.Count(s => s.Appearance)</td>
+                            <td class="numeric-column">@player.PerformanceStats.Sum(s => s.Goals)</td>
+                            <td class="numeric-column">@player.PerformanceStats.Sum(s => s.Assists)</td>
+                            <td class="numeric-column">@player.PerformanceStats.Count(s => s.YellowCard)</td>
+                            <td class="numeric-column">@player.PerformanceStats.Count(s => s.RedCard)</td>
+                            <td class="numeric-column">@player.PerformanceStats.Sum(s => s.PenaltySaves)</td>
+                            <td class="numeric-column">@player.PerformanceStats.Count(s => s.CleanSheet)</td>
+                            <td class="numeric-column">@player.PerformanceStats.Sum(s => s.PenaltyMissed)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No players available for this team.</p>
+        }
+    </div>
+
+    <div>
+        <h4>Match Results</h4>
+        @if (Matches != null && Matches.Any())
+        {
+            <table class="table table-bordered table-hover table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Opponent</th>
+                        <th class="highlight-column">Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var match in Matches)
+                    {
+                        var isHomeTeam = match.HomeTeamId == Team.Id;
+                        var teamScore = isHomeTeam ? match.HomeTeamGoals : match.AwayTeamGoals;
+                        var opponentScore = isHomeTeam ? match.AwayTeamGoals : match.HomeTeamGoals;
+                        var opponentName = isHomeTeam ? match.AwayTeam?.Name : match.HomeTeam?.Name;
+                        var resultClass = match.Kickoff > DateTime.Now
+                        ? "text-muted"
+                        : teamScore > opponentScore
+                        ? "text-success"
+                        : teamScore < opponentScore
+                        ? "text-danger"
+                        : "";
+
+                        <tr>
+                            <td>@match.Kickoff.ToString("d")</td>
+                            <td>@opponentName</td>
+                            <td class="@resultClass highlight-column">
+                                @if (match.Kickoff > DateTime.Now)
+                                {
+                                    <span>TBD</span>
+                                }
+                                else if (teamScore > opponentScore)
+                                {
+                                    <span>Win (@teamScore - @opponentScore)</span>
+                                }
+                                else if (teamScore < opponentScore)
+                                {
+                                    <span>Loss (@teamScore - @opponentScore)</span>
+                                }
+                                else
+                                {
+                                    <span>Draw (@teamScore - @opponentScore)</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No matches available for this team.</p>
+        }
+    </div>
+
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private LocalFantasyLeagueContext context = default!;
+    private Team? Team { get; set; }
+    private List<Match> Matches = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        context = DbFactory.CreateDbContext();
+        Team = await context.Teams
+            .Include(t => t.Players)
+                .ThenInclude(p => p.PerformanceStats)
+            .FirstOrDefaultAsync(t => t.Id == Id);
+        Matches = await context.Matches
+        .Where(m => m.HomeTeamId == Id || m.AwayTeamId == Id)
+        .Include(m => m.HomeTeam)
+        .Include(m => m.AwayTeam)
+        .ToListAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (context != null)
+        {
+            await context.DisposeAsync();
+        }
+    }
+}

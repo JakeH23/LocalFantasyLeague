@@ -1,0 +1,136 @@
+﻿@page "/matches/details/{Id:int}"
+@inject IDbContextFactory<LocalFantasyLeague.Data.LocalFantasyLeagueContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<h3>Match Details</h3>
+
+@if (Match is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <dl class="row">
+        <dt class="col-sm-2">Kickoff</dt>
+        <dd class="col-sm-10">@Match.Kickoff.ToString("f")</dd>
+
+        <dt class="col-sm-2">Home Team</dt>
+        <dd class="col-sm-10">@Match.HomeTeam.Name</dd>
+
+        <dt class="col-sm-2">Away Team</dt>
+        <dd class="col-sm-10">@Match.AwayTeam.Name</dd>
+
+        @if (Match.Kickoff < DateTime.Now)
+        {
+            <dt class="col-sm-2">Score</dt>
+            <dd class="col-sm-10">
+                @Match.HomeTeam.Name: @Match.HomeTeamGoals vs @Match.AwayTeamGoals : @Match.AwayTeam.Name
+            </dd>
+        }
+    </dl>
+
+    <div class="row">
+        <!-- Home Team Pitch -->
+        <div class="col-md-6">
+            <h4 class="text-center">@Match.HomeTeam.Name</h4>
+            <div class="pitch">
+                @RenderPositionRow(HomeTeamPlayers, "FWD")
+                @RenderPositionRow(HomeTeamPlayers, "MID")
+                @RenderPositionRow(HomeTeamPlayers, "DEF")
+                @RenderPositionRow(HomeTeamPlayers, "GK")
+            </div>
+        </div>
+
+        <!-- Away Team Pitch -->
+        <div class="col-md-6">
+            <h4 class="text-center">@Match.AwayTeam.Name</h4>
+            <div class="pitch">
+                @RenderPositionRow(AwayTeamPlayers, "FWD")
+                @RenderPositionRow(AwayTeamPlayers, "MID")
+                @RenderPositionRow(AwayTeamPlayers, "DEF")
+                @RenderPositionRow(AwayTeamPlayers, "GK")
+            </div>
+        </div>
+
+
+    </div>
+
+    <a href="/matches">Back</a>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Match? Match;
+    private LocalFantasyLeagueContext context = default!;
+    private List<PlayerWithPoints> HomeTeamPlayers = new();
+    private List<PlayerWithPoints> AwayTeamPlayers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        context = DbFactory.CreateDbContext();
+        Match = await context.Matches
+        .Include(m => m.HomeTeam).ThenInclude(t => t.Players)
+        .Include(m => m.AwayTeam).ThenInclude(t => t.Players)
+        .Include(m => m.Stats)
+        .FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Match != null)
+        {
+            // Filter and calculate points for home team players with an appearance
+            HomeTeamPlayers = Match.HomeTeam.Players
+            .Where(player => Match.Stats.Any(stat => stat.PlayerId == player.Id && stat.Appearance))
+            .Select(player => new PlayerWithPoints
+                    {
+                        Name = player.Name,
+                        Position = player.Position,
+                        TotalPoints = CalculateTotalPoints(Match.Stats.Where(stat => stat.PlayerId == player.Id && stat.Appearance).ToList())
+                    }).ToList();
+
+            // Filter and calculate points for away team players with an appearance
+            AwayTeamPlayers = Match.AwayTeam.Players
+            .Where(player => Match.Stats.Any(stat => stat.PlayerId == player.Id && stat.Appearance))
+            .Select(player => new PlayerWithPoints
+                    {
+                        Name = player.Name,
+                        Position = player.Position,
+                        TotalPoints = CalculateTotalPoints(Match.Stats.Where(stat => stat.PlayerId == player.Id && stat.Appearance).ToList())
+                    }).ToList();
+        }
+    }
+
+
+    private int CalculateTotalPoints(List<PerformanceStat> stats)
+    {
+        return stats.Sum(stat =>
+            (stat.Goals * 3) +
+            (stat.Assists * 1) +
+            (stat.YellowCard ? -2 : 0) +
+            (stat.RedCard ? -5 : 0) +
+            (stat.PenaltySaves * 1) +
+            (stat.CleanSheet ? 5 : 0) +
+            (stat.PenaltyMissed * -1)
+        );
+    }
+
+    RenderFragment RenderPositionRow(List<PlayerWithPoints> players, string positionType) => @<div class="position-row">
+        @foreach (var player in players.Where(p => p.Position.ToUpper() == positionType.ToUpper()))
+    {
+        <div class="player-card">
+            <div class="shirt">
+                <svg width="100px" height="100px" viewBox="0 -7.72 127.24603 127.24603" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.1" y="0px" x="0px" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" enable-background="new 0 0 856 412" class="player-shirt">
+                <path d="m32 109c-1.4 0-2.5-1.1-2.5-2.5v-62.6l-7 5.9c-.1.1-.2.1-.2.2-1 .6-2.1 1-3.2 1-2 0-3.8-1-4.9-2.6l-10.7-15.6c-1.8-2.7-1-6.3 1.7-8.1l29.7-20.7c.2-.1.4-.3.7-.3.1 0 2.8-.9 6.6-1h3.1c.7 0 1.4.3 1.8.8.5.5.7 1.2.6 1.9 0 .1 0 .3-.1.4.2 7.5 8.1 14.5 16.5 14.5s16.3-7 16.5-14.5c0-.1 0-.3-.1-.4-.1-.7.2-1.4.6-1.9s1.1-.8 1.8-.8h6.1c2.4 0 4.3 1.1 4.5 1.2.1 0 .1.1.2.1l28.7 20.7c2.6 1.7 3.4 5.4 1.6 8.1l-10.7 15.2c-1 1.6-2.9 2.6-4.9 2.6-1.2 0-2.3-.3-3.2-1-.1 0-.1-.1-.2-.2l-6.4-5.3-.2 62.9c0 1.4-1.1 2.5-2.5 2.5l-63.9 1z" fill="#006" id="element_14b5e70d"></path>
+                <path d="m42.2 2.5c-3.8.1-6.5 1-6.6 1-.3 0-.5.2-.7.3l-3 2.09v51h-2.4v50.1c0 1 1.1 2 2.5 2h63.9c1.4 0 2.5-1 2.5-2l.1-50.2h-2.6v-51.4l-2.2-1.6c-.1 0-.1-.1-.2-.1-.2-.1-2.1-1.2-4.5-1.2h-6.1c-.7 0-1.4.3-1.8.8s-.7 1.2-.6 1.9c.1.1.1.3.1.4-.2 7.5-8.1 14.5-16.5 14.5s-16.3-7-16.5-14.5c.1-.1.1-.3.1-.4.1-.7-.1-1.4-.6-1.9-.4-.5-1.1-.8-1.8-.8h-3.1z" fill="#fe0" id="element_ae76a3ea"></path>
+                <path d="m89.1 5c1.8 0 3.1.9 3.1.9l28.7 20.6c1.6 1 2 3.1.9 4.7l-10.7 15.1c-.6 1-1.7 1.5-2.8 1.5-.6 0-1.3-.2-1.9-.6l-10.5-8.6-.2 68.2h-63.7v-68l-11.2 9.4c-.6.4-1.2.6-1.9.6-1.1 0-2.2-.5-2.8-1.5l-10.2-16.1c-1-1.6-.6-3.6.9-4.7l29.7-20.7s2.4-.8 5.8-.9h3.1v.2.2c0 9 9.1 17.3 19 17.3s19-8.3 19-17.3v-.2-.2h5.9.2c-.1.1 0 .1 0 .1m0-5s-.1 0 0 0h-.2-5.9c-1.4 0-2.7.6-3.7 1.6-.9 1-1.4 2.4-1.3 3.8v.4c-.3 6.1-7.1 11.9-14 11.9s-13.7-5.8-14-11.9v-.4c.1-1.4-.3-2.8-1.3-3.8-.9-1-2.3-1.6-3.7-1.6h-3.1-.1c-4 .1-6.9 1-7.3 1.1-.5.2-.9.4-1.3.7l-29.5 20.6c-3.8 2.6-4.8 7.7-2.3 11.6l10.7 16.1c1.6 2.3 4.2 3.7 7 3.7 1.6 0 3.2-.5 4.6-1.4.2-.1.3-.2.5-.3l2.9-2.5v57.2c0 2.8 2.2 5 5 5h63.8c2.8 0 5-2.2 5-5l.1-57.7 2.3 1.9c.1.1.3.2.4.3 1.4.9 3 1.4 4.6 1.4 2.8 0 5.4-1.4 6.9-3.7l10.6-15 .1-.1c2.5-3.8 1.5-9-2.3-11.5l-28.4-21.1c-.1-.1-.2-.1-.3-.2-.3-.2-2.6-1.5-5.6-1.5z" id="element_4f6d6af9"></path>
+    </svg>
+            </div>
+            <div class="player-info">
+                <div class="player-name">@player.Name</div>
+                <div class="player-points">Points: @player.TotalPoints</div>
+            </div>
+        </div>
+    }
+    </div>;
+
+
+
+}

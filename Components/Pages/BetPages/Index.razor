@@ -1,0 +1,50 @@
+﻿@page "/bets"
+@inject IBettingService BettingService
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+
+<h3>Place a Bet</h3>
+
+<select @bind="SelectedPlayerId">
+    @foreach (var player in Players)
+    {
+        <option value="@player.Id">@player.Name</option>
+    }
+</select>
+
+<select @bind="SelectedBetType">
+    <option value="TopScorer">Top Scorer</option>
+    <option value="MVP">MVP</option>
+</select>
+
+<input type="number" @bind="BetAmount" class="form-control" placeholder="Bet Amount" />
+
+<button class="btn btn-success" @onclick="PlaceBet">Place Bet</button>
+
+@code {
+    private List<Player> Players = new();
+    private int SelectedPlayerId;
+    private BetType SelectedBetType;
+    private decimal BetAmount;
+    private LocalFantasyLeagueContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+
+    private async Task PlaceBet()
+    {
+        var bet = new Bet
+            {
+                UserId = "test_user",
+                Type = SelectedBetType,
+                PlayerId = SelectedPlayerId,
+                Amount = BetAmount,
+                IsResolved = false
+            };
+
+        await BettingService.PlaceBetAsync(bet);
+    }
+}

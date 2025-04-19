@@ -1,0 +1,79 @@
+﻿@page "/matches/create"
+@rendermode InteractiveServer
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject NavigationManager Nav
+
+<h3>Create Match</h3>
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm method="post" Model="Match" OnValidSubmit="HandleSubmit" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+
+            <div class="mb-3">
+                <label for="homeTeam">Home Team</label>
+                <select id="homeTeam" class="form-select" @bind="Match.HomeTeamId">
+                    <option value="">-- Select Home Team --</option>
+                    @foreach (var team in Teams)
+                    {
+                        <option value="@team.Id">@team.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="awayTeam">Away Team</label>
+                <select id="awayTeam" class="form-select" @bind="Match.AwayTeamId">
+                    <option value="">-- Select Away Team --</option>
+                    @foreach (var team in Teams)
+                    {
+                        <option value="@team.Id">@team.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="matchDate">Match Date</label>
+                <input id="matchDate" type="date" class="form-control" @bind="SelectedDate" />
+            </div>
+
+            <div class="mb-3">
+                <label for="matchTime">Match Time</label>
+                <select id="matchTime" class="form-select" @bind="SelectedTime">
+                    <option value="19:00">7:00 PM</option>
+                    <option value="19:30">7:30 PM</option>
+                    <option value="20:00">8:00 PM</option>
+                    <option value="20:30">8:30 PM</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-success">Save</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private Match Match = new();
+    private List<Team> Teams = new();
+    private DateTime SelectedDate = DateTime.Today;
+    private string SelectedTime = "19:00";
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        Teams = await db.Teams.ToListAsync();
+    }
+
+    private async Task HandleSubmit()
+    {
+        // Combine the selected date and time into the Match.Kickoff property
+        Match.Kickoff = DateTime.Parse($"{SelectedDate:yyyy-MM-dd} {SelectedTime}");
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        db.Matches.Add(Match);
+        await db.SaveChangesAsync();
+        Nav.NavigateTo("/matches");
+    }
+}
+

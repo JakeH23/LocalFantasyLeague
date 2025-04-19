@@ -1,0 +1,22 @@
+﻿@page "/admin"
+@inject LocalFantasyLeagueContext Db
+
+<h3>Admin: Match Results Entry</h3>
+
+@foreach (var match in Matches)
+{
+    <p>@match.HomeTeam.Name vs @match.AwayTeam.Name (@match.Kickoff)</p>
+    <button class="btn btn-secondary">Enter Stats</button>
+}
+
+@code {
+    private List<Match> Matches = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Matches = await Db.Matches
+            .Include(m => m.HomeTeam)
+            .Include(m => m.AwayTeam)
+            .ToListAsync();
+    }
+}

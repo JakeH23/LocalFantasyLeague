@@ -1,0 +1,48 @@
+﻿@page "/players/edit/{Id:int}"
+@rendermode InteractiveServer
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject NavigationManager Nav
+
+<h3>Edit Player</h3>
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm method="post" Model="Player" OnValidSubmit="Save" FormName="edit" Enhance>
+            <InputText class="form-control mb-2" @bind-Value="Player.Name" />
+            <select class="form-select mb-2" @bind="Player.Position">
+                <option value="">-- Select Position --</option>
+                <option value="GK">Goalkeeper (GK)</option>
+                <option value="DEF">Defender (DEF)</option>
+                <option value="MID">Midfielder (MID)</option>
+                <option value="FWD">Forward (FWD)</option>
+            </select>
+            <select class="form-select mb-2" @bind="Player.TeamId">
+                @foreach (var t in Teams)
+                {
+                    <option value="@t.Id">@t.Name</option>
+                }
+            </select>
+            <button class="btn btn-primary">Save</button>
+        </EditForm>
+    </div>
+</div>
+@code {
+    [Parameter] public int Id { get; set; }
+    private Player Player = new();
+    private List<Team> Teams = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        Player = await db.Players.FindAsync(Id);
+        Teams = await db.Teams.ToListAsync();
+    }
+
+    private async Task Save()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        db.Update(Player);
+        await db.SaveChangesAsync();
+        Nav.NavigateTo("/players");
+    }
+}
