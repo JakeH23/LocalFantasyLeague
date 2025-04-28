@@ -79,7 +79,7 @@
                 PenaltySaves = player.PerformanceStats.Sum(stat => stat.PenaltySaves),
                 CleanSheets = player.PerformanceStats.Count(stat => stat.CleanSheet),
                 PenaltyMissed = player.PerformanceStats.Sum(stat => stat.PenaltyMissed),
-                TotalPoints = CalculateTotalPoints(player.PerformanceStats)
+                TotalPoints = PointCalculator.CalculateTotalPoints(player.PerformanceStats)
             }).ToList();
 
         FilteredPlayersWithPoints = PlayersWithPoints; // Initially show all players
@@ -101,19 +101,5 @@
         }
 
         StateHasChanged(); // Notify Blazor to re-render the UI
-    }
-
-    private int CalculateTotalPoints(List<PerformanceStat> stats)
-    {
-        return stats.Sum(stat =>
-            (stat.Appearance ? 1 : 0) +
-            (stat.Goals * 3) +
-            (stat.Assists * 1) +
-            (stat.YellowCard ? -2 : 0) +
-            (stat.RedCard ? -5 : 0) +
-            (stat.PenaltySaves * 1) +
-            (stat.CleanSheet ? 5 : 0) +
-            (stat.PenaltyMissed * -1)
-        );
     }
 }

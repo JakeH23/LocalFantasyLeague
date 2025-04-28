@@ -1,0 +1,73 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject NavigationManager Navigation
+@inject UserSession UserSession
+
+<div class="login-container">
+    <div class="login-card">
+        <h3 class="text-center">Login</h3>
+
+        @if (loginFailed)
+        {
+            <p class="error-message">Invalid username or password.</p>
+        }
+
+        <EditForm Model="loginDetails" OnValidSubmit="HandleLogin" FormName="login" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <InputText id="username" class="form-control" @bind-Value="loginDetails.Username" placeholder="Enter your username" />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <InputText id="password" class="form-control" @bind-Value="loginDetails.Password" placeholder="Enter your password" type="password" />
+            </div>
+
+            <div class="form-group text-center">
+                <button type="submit" class="btn btn-primary">Login</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginDetails = new();
+    private bool loginFailed = false;
+
+    private async Task HandleLogin()
+    {
+        var hash = ComputeSha256Hash(loginDetails.Password);
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Username == loginDetails.Username && u.PasswordHash == hash);
+
+        if (user is not null)
+        {
+            await InvokeAsync(() =>
+            {
+                UserSession.CurrentUser = user;
+                StateHasChanged();
+                Navigation.NavigateTo("/");
+            });
+        }
+        else
+        {
+            await InvokeAsync(() =>
+            {
+                loginFailed = true;
+                StateHasChanged();
+            });
+        }
+    }
+
+    private string ComputeSha256Hash(string rawData)
+    {
+        using var sha256 = SHA256.Create();
+        byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+        return Convert.ToBase64String(bytes);
+    }
+}

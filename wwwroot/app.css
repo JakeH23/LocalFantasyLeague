@@ -17,14 +17,38 @@ h1:focus {
 
 /* Buttons */
 .btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background-color: #007bff;
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
     box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
+
+/* Form Controls */
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+    .form-control:focus {
+        border-color: #80bdff;
+        outline: none;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
+    }
 
 /* Validation */
 .valid.modified:not([type=checkbox]) {
@@ -35,8 +59,11 @@ h1:focus {
     outline: 1px solid #e50000;
 }
 
-.validation-message {
-    color: #e50000;
+.validation-message, .error-message {
+    color: red;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    text-align: center;
 }
 
 /* Error Boundary */
@@ -87,23 +114,23 @@ h1:focus {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.table td, .table th {
-    padding: 12px 15px;
-}
+    .table td, .table th {
+        padding: 12px 15px;
+    }
 
-.table td.numeric-column {
-     text-align: center;
-}
+        .table td.numeric-column {
+            text-align: center;
+        }
 
-.table thead th {
-      background-color: #007bff; /* Bootstrap primary color */
-      color: #ffffff; /* White text */
-      font-weight: bold;
-       text-align: center;
-}
+    .table thead th {
+        background-color: #007bff;
+        color: #ffffff;
+        font-weight: bold;
+        text-align: center;
+    }
 
 .table-hover tbody tr:hover {
-    background-color: #f1f1f1; /* Light gray background */
+    background-color: #f1f1f1;
 }
 
 .table-striped tbody tr:nth-of-type(odd) {
@@ -114,9 +141,9 @@ h1:focus {
     border: 1px solid #dee2e6;
 }
 
-.table-bordered th, .table-bordered td {
+    .table-bordered th, .table-bordered td {
         border: 1px solid #dee2e6;
-}
+    }
 
 .table-responsive {
     overflow-x: auto;
@@ -126,7 +153,7 @@ h1:focus {
 .highlight-column {
     font-weight: bold;
     color: black;
-    background-color: #007bff; /* Bootstrap primary color */
+    background-color: #007bff;
     text-align: center;
 }
 
@@ -135,84 +162,28 @@ h1:focus {
     border-color: #929292;
 }
 
-.pitch {
+/* Login and Register Containers */
+.register-container, .login-container {
     display: flex;
-    flex-direction: column-reverse;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 350px;
-    height: 500px;
-    background: linear-gradient(to top, #228B22, #32CD32);
-    border: 4px solid white;
-    border-radius: 10px;
-    margin: auto;
-    padding: 10px 5px;
-}
-
-.position-row {
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-    height: 120px;
-    position: relative;
-}
-
-.player-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
-    background: #ffffff;
-    border: 1px solid #ccc;
+    align-items: center;
+    background-color: #f8f9fa;
+    padding: 20px;
+}
+
+.register-card, .login-card {
+    background: white;
     border-radius: 8px;
-    padding: 10px;
-    width: 100px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    max-width: 400px;
+    width: 100%;
+}
+
+.text-center {
     text-align: center;
 }
 
-.shirt {
-    margin-bottom: 8px;
-}
-
-.shirt-icon {
-    width: 40px;
-    height: 40px;
-    fill: red; /* Shirt color */
-}
-
-.player-info {
-    font-size: 0.9rem;
-}
-
-.player-name {
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-
-.player-points {
-    color: #555;
-    font-size: 0.8rem;
-}
-
-.player-shirt {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-}
-
-.text-success {
-    color: green;
-    font-weight: bold;
-}
-
-.text-danger {
-    color: red;
-    font-weight: bold;
-}
-
-.text-muted {
-    color: grey;
-    font-weight: bold;
+.form-group {
+    margin-bottom: 15px;
 }

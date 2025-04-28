@@ -1,9 +1,12 @@
 ﻿@page "/teams"
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject UserSession UserSession
 
 <h3>Teams</h3>
-<a class="btn btn-primary mb-3" href="/teams/create">Add Team</a>
-
+@if (UserSession.CurrentUser != null)
+{
+    <a class="btn btn-primary mb-3" href="/teams/create">Add Team</a>
+}
 <div class="table-responsive">
     <table class="table table-striped table-hover table-bordered">
         <thead>
@@ -18,9 +21,16 @@
                 <tr>
                     <td>@team.Name</td>
                     <td>
-                        <a href="/teams/details/@team.Id">Details</a> |
-                        <a href="/teams/edit/@team.Id">Edit</a> |
-                        <a href="/teams/delete/@team.Id">Delete</a>
+                        @if (UserSession.CurrentUser == null)
+                        {
+                            <a href="/teams/details/@team.Id">Details</a>
+                        }
+                        else
+                        {
+                            <a href="/teams/details/@team.Id">Details</a>
+                            <a href="/teams/edit/@team.Id">Edit</a>
+                            <a href="/teams/delete/@team.Id">Delete</a>
+                        }
                     </td>
                 </tr>
             }

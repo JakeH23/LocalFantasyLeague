@@ -1,5 +1,6 @@
 using LocalFantasyLeague.Components;
 using LocalFantasyLeague.Data;
+using LocalFantasyLeague.Models;
 using LocalFantasyLeague.Services;
 using LocalFantasyLeague.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddTransient<IBettingService, BettingService>();
-
+builder.Services.AddSingleton<UserSession>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

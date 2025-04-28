@@ -1,10 +1,13 @@
 ﻿@page "/players"
 @rendermode InteractiveServer
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject UserSession UserSession
 
 <h3>Players</h3>
-<a class="btn btn-primary mb-3" href="/players/create">Add Player</a>
-
+@if (UserSession.CurrentUser != null)
+{
+    <a class="btn btn-primary mb-3" href="/players/create">Add Player</a>
+}
 <div class="mb-3">
     <label for="teamFilter" class="form-label">Filter by Team:</label>
     <select id="teamFilter" class="form-select" @onchange="FilterPlayersByTeam">
@@ -25,9 +28,16 @@
                 <td>@p.Name</td>
                 <td>@p.Team?.Name</td>
                 <td>
-                    <a href="/players/details/@p.Id">Details</a> |
-                    <a href="/players/edit/@p.Id">Edit</a> |
-                    <a href="/players/delete/@p.Id">Delete</a>
+                    @if (UserSession.CurrentUser == null)
+                    {
+                        <a href="/players/details/@p.Id">Details</a>
+                    }
+                    else
+                    {
+                        <a href="/players/details/@p.Id">Details</a>
+                        <a href="/players/edit/@p.Id">Edit</a>
+                        <a href="/players/delete/@p.Id">Delete</a>
+                    }
                 </td>
             </tr>
         }

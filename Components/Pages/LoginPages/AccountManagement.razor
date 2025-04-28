@@ -1,0 +1,93 @@
+﻿@page "/account"
+@rendermode InteractiveServer
+@inject LocalFantasyLeagueContext DbContext
+@inject UserSession UserSession
+@inject NavigationManager Navigation
+
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Account Management</h3>
+        </div>
+        <div class="card-body">
+            @if (UserSession.CurrentUser is null)
+            {
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-exclamation-circle"></i> You must be logged in to manage your account.
+                </div>
+                <button class="btn btn-primary" @onclick="HandleLoginNav">
+                    <i class="fas fa-sign-in-alt"></i> Go to Login
+                </button>
+            }
+            else
+            {
+                <EditForm Model="currentUser" OnValidSubmit="HandleSave" FormName="account" class="needs-validation">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="mb-3">
+                        <label for="team" class="form-label">
+                            <i class="fas fa-users"></i> Select Team:
+                        </label>
+                        <InputSelect id="team" class="form-select" @bind-Value="currentUser.TeamId">
+                            <option value="">-- Select a Team --</option>
+                            @foreach (var team in teams)
+                            {
+                                <option value="@team.Id">@team.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="player" class="form-label">
+                            <i class="fas fa-user"></i> Select Player:
+                        </label>
+                        <InputSelect id="player" class="form-select" @bind-Value="currentUser.PlayerId">
+                            <option value="">-- Select a Player --</option>
+                            @foreach (var player in players)
+                            {
+                                <option value="@player.Id">@player.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private User currentUser = new();
+    private List<Team> teams = new();
+    private List<Player> players = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserSession.CurrentUser is not null)
+        {
+            currentUser = await DbContext.Users
+                .FirstOrDefaultAsync(u => u.Id == UserSession.CurrentUser.Id) ?? new User();
+
+            teams = await DbContext.Teams.ToListAsync();
+            players = await DbContext.Players.ToListAsync();
+        }
+    }
+
+    private async Task HandleSave()
+    {
+        DbContext.Users.Update(currentUser);
+        await DbContext.SaveChangesAsync();
+
+        UserSession.CurrentUser = currentUser;
+        Navigation.NavigateTo("/");
+    }
+
+    private void HandleLoginNav()
+    {
+        Navigation.NavigateTo("/login");
+    }
+}

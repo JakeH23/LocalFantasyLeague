@@ -1,15 +1,11 @@
-﻿@page "/matches"
+﻿@page "/user-fantasy"
 @inject IDbContextFactory<LocalFantasyLeague.Data.LocalFantasyLeagueContext> DbFactory
 @inject UserSession UserSession
 
-<h3>All Matches</h3>
-@if (UserSession.CurrentUser != null)
-{
-    <a href="/matches/create" class="btn btn-primary mb-3">Add Match</a>
-}
+<h3>Fantasy Weeks</h3>
 <div class="mb-3">
     <label for="teamFilter" class="form-label">Filter by Team:</label>
-    <select id="teamFilter" class="form-select" @onchange="FilterMatchesByTeam">
+    <select id="teamFilter" class="form-select" disabled>
         <option value="">All Teams</option>
         @foreach (var team in Teams)
         {
@@ -31,7 +27,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var match in FilteredMatches)
+                @foreach (var match in Matches)
                 {
                     <tr>
                         <td>@match.Kickoff.ToString("g")</td>
@@ -69,7 +65,6 @@
 
 @code {
     private List<Match> Matches = new();
-    private List<Match> FilteredMatches = new();
     private List<Team> Teams = new();
     private int? SelectedTeamId;
 
@@ -81,24 +76,9 @@
             .Include(m => m.AwayTeam)
             .OrderBy(m => m.Kickoff)
             .ToListAsync();
+        Matches = Matches.Where(x => x.HomeTeamId == UserSession.CurrentUser.TeamId || x.AwayTeamId == UserSession.CurrentUser.TeamId).ToList(); // Initially show all players
+
         Teams = await context.Teams.ToListAsync();
-        FilteredMatches = Matches; // Initially show all players
-    }
-
-    private void FilterMatchesByTeam(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var teamId))
-        {
-            SelectedTeamId = teamId;
-            FilteredMatches = Matches.Where(p => p.HomeTeamId == teamId || p.AwayTeamId == teamId).ToList();
-        }
-        else
-        {
-            SelectedTeamId = null;
-            FilteredMatches = Matches; // Show all players if no team is selected
-        }
-
-        // Notify Blazor to re-render the UI
-        StateHasChanged();
+        Teams = Teams.Where(x => x.Id == UserSession.CurrentUser.TeamId).ToList();
     }
 }

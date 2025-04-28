@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LocalFantasyLeague.Migrations
 {
     [DbContext(typeof(LocalFantasyLeagueContext))]
-    [Migration("20250419191518_addpositionforplayer")]
-    partial class addpositionforplayer
+    [Migration("20250420212632_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -97,6 +97,9 @@ namespace LocalFantasyLeague.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("Appearance")
+                        .HasColumnType("bit");
+
                     b.Property<int>("Assists")
                         .HasColumnType("int");
 
@@ -176,6 +179,41 @@ namespace LocalFantasyLeague.Migrations
                     b.ToTable("Teams");
                 });
 
+            modelBuilder.Entity("LocalFantasyLeague.Models.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("PlayerId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TeamId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId")
+                        .IsUnique()
+                        .HasFilter("[PlayerId] IS NOT NULL");
+
+                    b.HasIndex("TeamId")
+                        .IsUnique()
+                        .HasFilter("[TeamId] IS NOT NULL");
+
+                    b.ToTable("Users");
+                });
+
             modelBuilder.Entity("LocalFantasyLeague.Models.Match", b =>
                 {
                     b.HasOne("LocalFantasyLeague.Models.Team", "AwayTeam")
@@ -219,6 +257,21 @@ namespace LocalFantasyLeague.Migrations
                     b.HasOne("LocalFantasyLeague.Models.Team", "Team")
                         .WithMany("Players")
                         .HasForeignKey("TeamId");
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("LocalFantasyLeague.Models.User", b =>
+                {
+                    b.HasOne("LocalFantasyLeague.Models.Player", "Player")
+                        .WithOne()
+                        .HasForeignKey("LocalFantasyLeague.Models.User", "PlayerId");
+
+                    b.HasOne("LocalFantasyLeague.Models.Team", "Team")
+                        .WithOne()
+                        .HasForeignKey("LocalFantasyLeague.Models.User", "TeamId");
+
+                    b.Navigation("Player");
 
                     b.Navigation("Team");
                 });

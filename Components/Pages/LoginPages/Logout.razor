@@ -1,0 +1,36 @@
+﻿@page "/logout"
+@rendermode InteractiveServer
+@inject UserSession UserSession
+@inject NavigationManager Navigation
+
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h3 class="mb-0">Confirm Logout</h3>
+        </div>
+        <div class="card-body">
+            <p>Are you sure you want to log out?</p>
+            <div class="d-flex justify-content-between">
+                <button class="btn btn-secondary" @onclick="CancelLogout">Cancel</button>
+                <button class="btn btn-danger" @onclick="ConfirmLogout">Logout</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private void CancelLogout()
+    {
+        // Navigate back to the home page or previous page
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task ConfirmLogout()
+    {
+        await InvokeAsync(() =>
+        {
+            UserSession.CurrentUser = null;
+            Navigation.NavigateTo("/");
+        });
+    }
+}

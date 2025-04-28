@@ -2,6 +2,406 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container mt-3">
+    @if (UserSession.CurrentUser?.TeamId != null)
+    {
+        <h2 class="text-center">Welcome, @UserSession.CurrentUser.Username!</h2>
+        <h4 class="text-center">Here is the latest for your team: <strong>@UserSession.CurrentUser.Team?.Name</strong></h4>
+        <hr />
 
-Welcome to your new app.
+        <!-- Team-Specific Information -->
+        <div class="row g-4">
+            <!-- Team-Specific Recently Played Matches -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-futbol"></i> Your Team's Recently Played Matches</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (teamRecentMatches?.Any() == true)
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var match in teamRecentMatches)
+                                {
+                                    <li class="list-group-item">
+                                        <strong>@match.Kickoff.ToString("MMM dd, yyyy")</strong><br />
+                                        @match.HomeTeam?.Name <strong>@match.HomeTeamGoals</strong> - <strong>@match.AwayTeamGoals</strong> @match.AwayTeam?.Name
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No recent matches available for your team.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team-Specific Upcoming Fixtures -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Your Team's Upcoming Fixtures</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (teamUpcomingFixtures?.Any() == true)
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var fixture in teamUpcomingFixtures)
+                                {
+                                    <li class="list-group-item">
+                                        <strong>@fixture.Kickoff.ToString("MMM dd, yyyy")</strong><br />
+                                        @fixture.HomeTeam?.Name vs @fixture.AwayTeam?.Name
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No upcoming fixtures available for your team.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team-Specific Top Fantasy Point Scorers -->
+            <div class="col-lg-4 col-md-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-trophy"></i> Your Team's Top Fantasy Point Scorers</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (teamTopScorers?.Any() == true)
+                        {
+                            <ol class="list-group list-group-numbered">
+                                @foreach (var scorer in teamTopScorers)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        @scorer.Name
+                                        <span class="badge bg-primary rounded-pill">@scorer.FantasyPoints pts</span>
+                                    </li>
+                                }
+                            </ol>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No fantasy point scorers available for your team.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="mb-5" />
+    }
+    @if (UserSession.CurrentUser?.PlayerId != null)
+    {
+        <!-- User Stats Section -->
+        <h2 class="text-center">Your Stats</h2>
+        <div class="row g-4">
+            <div class="col-lg-6 col-md-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-line"></i> Most Recent Game Stats</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (recentGameStats != null)
+                        {
+                            <ul class="list-group list-group-flush">
+                                @if (recentGameStats.Appearance)
+                                {
+                                    <li class="list-group-item"><strong>Appearance:</strong> <i class="fas fa-check text-success"></i></li>
+                                }
+                                <li class="list-group-item"><strong>Goals:</strong> @recentGameStats.Goals</li>
+                                <li class="list-group-item"><strong>Assists:</strong> @recentGameStats.Assists</li>
+                                @if (recentGameStats.YellowCard)
+                                {
+                                    <li class="list-group-item"><strong>Yellow Card:</strong> <i class="fas fa-check text-success"></i></li>
+                                }
+                                @if (recentGameStats.RedCard)
+                                {
+                                    <li class="list-group-item"><strong>Red Card:</strong> <i class="fas fa-check text-success"></i></li>
+                                }
+                                @if (recentGameStats.CleanSheet)
+                                {
+                                    <li class="list-group-item"><strong>Clean Sheet:</strong> <i class="fas fa-check text-success"></i></li>
+                                }
+                                @if (recentGameStats.PenaltySaves != 0)
+                                {
+                                    <li class="list-group-item"><strong>Penalty Saves:</strong> @recentGameStats.PenaltySaves</li>
+                                }
+                                @if (recentGameStats.PenaltyMissed != 0)
+                                {
+                                    <li class="list-group-item"><strong>Penalty Misses:</strong> @recentGameStats.PenaltyMissed</li>
+                                }
+                                <li class="list-group-item"><strong>Total Points:</strong> @PointCalculator.CalculateTotalPoints(new List<PerformanceStat> { recentGameStats })</li>
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No stats available for your most recent game.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 col-md-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-star"></i> Total Fantasy Stats</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (userFantasyStats != null)
+                        {
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><strong>Appearances:</strong> @userFantasyStats.Appearances</li>
+                                <li class="list-group-item"><strong>Goals:</strong> @userFantasyStats.Goals</li>
+                                <li class="list-group-item"><strong>Assists:</strong> @userFantasyStats.Assists</li>
+                                <li class="list-group-item"><strong>Yellow Cards:</strong> @userFantasyStats.YellowCards</li>
+                                <li class="list-group-item"><strong>Red Cards:</strong> @userFantasyStats.RedCards</li>
+                                <li class="list-group-item"><strong>Clean Sheets:</strong> @userFantasyStats.CleanSheets</li>
+                                <li class="list-group-item"><strong>Penalty Saves:</strong> @userFantasyStats.PenaltySaves</li>
+                                <li class="list-group-item"><strong>Total Points:</strong> @userFantasyStats.TotalPoints</li>
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No total stats available.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="mb-5" />
+    }
+    <!-- General Information -->
+    <h2 class="text-center">General Information</h2>
+    <div class="row g-4">
+        <!-- General Recently Played Matches -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-futbol"></i> Recently Played Matches</h5>
+                </div>
+                <div class="card-body">
+                    @if (recentMatches?.Any() == true)
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var match in recentMatches)
+                            {
+                                <li class="list-group-item">
+                                    <strong>@match.Kickoff.ToString("MMM dd, yyyy")</strong><br />
+                                    @match.HomeTeam?.Name <strong>@match.HomeTeamGoals</strong> - <strong>@match.AwayTeamGoals</strong> @match.AwayTeam?.Name
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No recent matches available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- General Upcoming Fixtures -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Upcoming Fixtures</h5>
+                </div>
+                <div class="card-body">
+                    @if (upcomingFixtures?.Any() == true)
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var fixture in upcomingFixtures)
+                            {
+                                <li class="list-group-item">
+                                    <strong>@fixture.Kickoff.ToString("MMM dd, yyyy")</strong><br />
+                                    @fixture.HomeTeam?.Name vs @fixture.AwayTeam?.Name
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No upcoming fixtures available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- General Top Fantasy Point Scorers -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-trophy"></i> Top Fantasy Point Scorers</h5>
+                </div>
+                <div class="card-body">
+                    @if (topScorers?.Any() == true)
+                    {
+                        <ol class="list-group list-group-numbered">
+                            @foreach (var scorer in topScorers)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    @scorer.Name
+                                    <span class="badge bg-primary rounded-pill">@scorer.FantasyPoints pts</span>
+                                </li>
+                            }
+                        </ol>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No fantasy point scorers available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Match> recentMatches = new();
+    private List<Match> upcomingFixtures = new();
+    private List<FantasyScorer> topScorers = new();
+
+    private List<Match> teamRecentMatches = new();
+    private List<Match> teamUpcomingFixtures = new();
+    private List<FantasyScorer> teamTopScorers = new();
+
+    private PerformanceStat? recentGameStats;
+    private PlayerWithPoints? userFantasyStats;
+
+    [Inject]
+    private LocalFantasyLeagueContext DbContext { get; set; } = default!;
+
+    [Inject]
+    private UserSession UserSession { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        int? teamId = UserSession.CurrentUser?.TeamId;
+        int? playerId = UserSession.CurrentUser?.PlayerId;
+
+        // Fetch recent game stats
+        if (playerId != null)
+        {
+            recentGameStats = await DbContext.PerformanceStats
+                .Where(ps => ps.PlayerId == playerId)
+                .OrderByDescending(ps => ps.Match!.Kickoff)
+                .FirstOrDefaultAsync();
+
+            // Fetch total fantasy stats
+            var player = await DbContext.Players
+                           .Include(p => p.PerformanceStats)
+                           .Include(p => p.Team)
+                           .FirstOrDefaultAsync(p => p.Id == playerId);
+
+            if (player != null)
+            {
+                userFantasyStats = new PlayerWithPoints
+                    {
+                        Name = player.Name,
+                        TeamName = player.Team?.Name ?? "No Team",
+                        TeamId = player.TeamId,
+                        Appearances = player.PerformanceStats.Count(stat => stat.Appearance),
+                        Goals = player.PerformanceStats.Sum(stat => stat.Goals),
+                        Assists = player.PerformanceStats.Sum(stat => stat.Assists),
+                        YellowCards = player.PerformanceStats.Count(stat => stat.YellowCard),
+                        RedCards = player.PerformanceStats.Count(stat => stat.RedCard),
+                        PenaltySaves = player.PerformanceStats.Sum(stat => stat.PenaltySaves),
+                        CleanSheets = player.PerformanceStats.Count(stat => stat.CleanSheet),
+                        PenaltyMissed = player.PerformanceStats.Sum(stat => stat.PenaltyMissed),
+                        TotalPoints = PointCalculator.CalculateTotalPoints(player.PerformanceStats)
+                    };
+            }
+        }
+        // Fetch general data
+        recentMatches = await DbContext.Matches
+            .Include(m => m.HomeTeam)
+            .Include(m => m.AwayTeam)
+            .Where(m => m.Kickoff < DateTime.Now)
+            .OrderByDescending(m => m.Kickoff)
+            .Take(5)
+            .ToListAsync();
+
+        upcomingFixtures = await DbContext.Matches
+            .Include(m => m.HomeTeam)
+            .Include(m => m.AwayTeam)
+            .Where(m => m.Kickoff > DateTime.Now)
+            .OrderBy(m => m.Kickoff)
+            .Take(5)
+            .ToListAsync();
+
+        topScorers = (await DbContext.PerformanceStats
+            .Include(ps => ps.Player)
+            .GroupBy(ps => ps.PlayerId)
+            .Select(g => new
+            {
+                PlayerId = g.Key,
+                Name = g.First().Player!.Name,
+                PerformanceStats = g.Select(ps => ps).ToList() // Fetch stats into memory
+            })
+            .ToListAsync())
+            .Select(g => new FantasyScorer
+                {
+                    PlayerId = g.PlayerId,
+                    Name = g.Name,
+                    FantasyPoints = PointCalculator.CalculateTotalPoints(g.PerformanceStats) // Calculate in memory
+                })
+            .OrderByDescending(fs => fs.FantasyPoints)
+            .Take(3)
+            .ToList();
+
+        // Fetch team-specific data
+        if (teamId != null)
+        {
+            teamRecentMatches = await DbContext.Matches
+                .Include(m => m.HomeTeam)
+                .Include(m => m.AwayTeam)
+                .Where(m => m.Kickoff < DateTime.Now &&
+                            (m.HomeTeamId == teamId || m.AwayTeamId == teamId))
+                .OrderByDescending(m => m.Kickoff)
+                .Take(5)
+                .ToListAsync();
+
+            teamUpcomingFixtures = await DbContext.Matches
+                .Include(m => m.HomeTeam)
+                .Include(m => m.AwayTeam)
+                .Where(m => m.Kickoff > DateTime.Now &&
+                            (m.HomeTeamId == teamId || m.AwayTeamId == teamId))
+                .OrderBy(m => m.Kickoff)
+                .Take(5)
+                .ToListAsync();
+
+            teamTopScorers = (await DbContext.PerformanceStats
+                .Include(ps => ps.Player)
+                .Where(ps => ps.Player!.TeamId == teamId)
+                .GroupBy(ps => ps.PlayerId)
+                .Select(g => new
+                {
+                    PlayerId = g.Key,
+                    Name = g.First().Player!.Name,
+                    PerformanceStats = g.ToList() // Fetch stats into memory
+                })
+                .ToListAsync())
+                .Select(g => new FantasyScorer
+                    {
+                        PlayerId = g.PlayerId,
+                        Name = g.Name,
+                        FantasyPoints = PointCalculator.CalculateTotalPoints(g.PerformanceStats) // Calculate in memory
+                    })
+                .OrderByDescending(fs => fs.FantasyPoints)
+                .Take(3)
+                .ToList();
+
+        }
+    }
+
+    private class FantasyScorer
+    {
+        public int PlayerId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int FantasyPoints { get; set; }
+    }
+}

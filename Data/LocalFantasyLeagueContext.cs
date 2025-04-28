@@ -15,6 +15,8 @@ namespace LocalFantasyLeague.Data
         public DbSet<Match> Matches { get; set; } = default!;
         public DbSet<PerformanceStat> PerformanceStats { get; set; } = default!;
         public DbSet<Bet> Bets { get; set; } = default!;
+        public DbSet<User> Users { get; set; } = default!;
+        public DbSet<UserFantasySelection> UserFantasySelections { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,6 +51,17 @@ namespace LocalFantasyLeague.Data
                 .WithMany(p => p.PerformanceStats)
                 .HasForeignKey(ps => ps.PlayerId);
 
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Player)
+                .WithOne()
+                .HasForeignKey<User>(u => u.PlayerId)
+                .IsRequired(false); // Allow null values
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Team)
+                .WithOne()
+                .HasForeignKey<User>(u => u.TeamId)
+                .IsRequired(false); // Allow null values
         }
 
     }
