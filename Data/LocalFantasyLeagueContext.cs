@@ -59,10 +59,9 @@ namespace LocalFantasyLeague.Data
 
             modelBuilder.Entity<User>()
                 .HasOne(u => u.Team)
-                .WithOne()
-                .HasForeignKey<User>(u => u.TeamId)
+                .WithMany(t => t.Users) // Allow multiple users per team
+                .HasForeignKey(u => u.TeamId)
                 .IsRequired(false); // Allow null values
         }
-
     }
 }

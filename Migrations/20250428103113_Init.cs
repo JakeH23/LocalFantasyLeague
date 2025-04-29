@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LocalFantasyLeague.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -40,6 +40,23 @@ namespace LocalFantasyLeague.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Teams", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserFantasySelections",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    MatchId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: true),
+                    Players = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CaptainedPlayerId = table.Column<int>(type: "int", nullable: true),
+                    IsProcessed = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserFantasySelections", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -199,6 +216,9 @@ namespace LocalFantasyLeague.Migrations
 
             migrationBuilder.DropTable(
                 name: "PerformanceStats");
+
+            migrationBuilder.DropTable(
+                name: "UserFantasySelections");
 
             migrationBuilder.DropTable(
                 name: "Users");

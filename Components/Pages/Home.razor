@@ -1,13 +1,39 @@
 ﻿@page "/"
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject UserSession UserSession
 
 <PageTitle>Home</PageTitle>
 
 <div class="container mt-3">
+    <!-- Alerts Section -->
+    @if (MatchesToComplete.Any() || MatchesNeedingSelections.Any())
+    {
+        <div class="alert alert-warning">
+            <h5 class="alert-heading">Actions Required</h5>
+            <ul class="mb-0">
+                @if (MatchesToComplete.Any())
+                {
+                    <li>
+                        <strong>@MatchesToComplete.Count</strong> match(es) require stats entry. 
+                        <a href="/admin" class="alert-link">Go to Admin Panel</a>
+                    </li>
+                }
+                @if (MatchesNeedingSelections.Any())
+                {
+                    <li>
+                        <strong>@MatchesNeedingSelections.Count</strong> upcoming match(es) need your fantasy selection. 
+                        <a href="/user-fantasy" class="alert-link">Create Selection</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
     @if (UserSession.CurrentUser?.TeamId != null)
     {
         <h2 class="text-center">Welcome, @UserSession.CurrentUser.Username!</h2>
         <h4 class="text-center">Here is the latest for your team: <strong>@UserSession.CurrentUser.Team?.Name</strong></h4>
-        <hr />
+        <hr/>
 
         <!-- Team-Specific Information -->
         <div class="row g-4">
@@ -15,7 +41,7 @@
             <div class="col-lg-4 col-md-6">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-futbol"></i> Your Team's Recently Played Matches</h5>
+                        <h5 class="mb-0"><i class="fas fa-futbol"></i> Recently Played Matches</h5>
                     </div>
                     <div class="card-body">
                         @if (teamRecentMatches?.Any() == true)
@@ -24,7 +50,7 @@
                                 @foreach (var match in teamRecentMatches)
                                 {
                                     <li class="list-group-item">
-                                        <strong>@match.Kickoff.ToString("MMM dd, yyyy")</strong><br />
+                                        <strong>@match.Kickoff.ToString("MMM dd, yyyy")</strong><br/>
                                         @match.HomeTeam?.Name <strong>@match.HomeTeamGoals</strong> - <strong>@match.AwayTeamGoals</strong> @match.AwayTeam?.Name
                                     </li>
                                 }
@@ -42,7 +68,7 @@
             <div class="col-lg-4 col-md-6">
                 <div class="card shadow-sm">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Your Team's Upcoming Fixtures</h5>
+                        <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Upcoming Fixtures</h5>
                     </div>
                     <div class="card-body">
                         @if (teamUpcomingFixtures?.Any() == true)
@@ -51,7 +77,7 @@
                                 @foreach (var fixture in teamUpcomingFixtures)
                                 {
                                     <li class="list-group-item">
-                                        <strong>@fixture.Kickoff.ToString("MMM dd, yyyy")</strong><br />
+                                        <strong>@fixture.Kickoff.ToString("MMM dd, yyyy")</strong><br/>
                                         @fixture.HomeTeam?.Name vs @fixture.AwayTeam?.Name
                                     </li>
                                 }
@@ -69,7 +95,7 @@
             <div class="col-lg-4 col-md-12">
                 <div class="card shadow-sm">
                     <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fas fa-trophy"></i> Your Team's Top Fantasy Point Scorers</h5>
+                        <h5 class="mb-0"><i class="fas fa-trophy"></i> Top Fantasy Point Scorers</h5>
                     </div>
                     <div class="card-body">
                         @if (teamTopScorers?.Any() == true)
@@ -92,7 +118,7 @@
                 </div>
             </div>
         </div>
-        <hr class="mb-5" />
+        <hr class="mb-5"/>
     }
     @if (UserSession.CurrentUser?.PlayerId != null)
     {
@@ -172,7 +198,7 @@
                 </div>
             </div>
         </div>
-        <hr class="mb-5" />
+        <hr class="mb-5"/>
     }
     <!-- General Information -->
     <h2 class="text-center">General Information</h2>
@@ -190,7 +216,7 @@
                             @foreach (var match in recentMatches)
                             {
                                 <li class="list-group-item">
-                                    <strong>@match.Kickoff.ToString("MMM dd, yyyy")</strong><br />
+                                    <strong>@match.Kickoff.ToString("MMM dd, yyyy")</strong><br/>
                                     @match.HomeTeam?.Name <strong>@match.HomeTeamGoals</strong> - <strong>@match.AwayTeamGoals</strong> @match.AwayTeam?.Name
                                 </li>
                             }
@@ -217,7 +243,7 @@
                             @foreach (var fixture in upcomingFixtures)
                             {
                                 <li class="list-group-item">
-                                    <strong>@fixture.Kickoff.ToString("MMM dd, yyyy")</strong><br />
+                                    <strong>@fixture.Kickoff.ToString("MMM dd, yyyy")</strong><br/>
                                     @fixture.HomeTeam?.Name vs @fixture.AwayTeam?.Name
                                 </li>
                             }
@@ -272,27 +298,26 @@
     private PerformanceStat? recentGameStats;
     private PlayerWithPoints? userFantasyStats;
 
-    [Inject]
-    private LocalFantasyLeagueContext DbContext { get; set; } = default!;
-
-    [Inject]
-    private UserSession UserSession { get; set; } = default!;
+    private List<Match> MatchesToComplete = new();
+    private List<Match> MatchesNeedingSelections = new();
 
     protected override async Task OnInitializedAsync()
     {
-        int? teamId = UserSession.CurrentUser?.TeamId;
-        int? playerId = UserSession.CurrentUser?.PlayerId;
+        var teamId = UserSession.CurrentUser?.TeamId;
+        var playerId = UserSession.CurrentUser?.PlayerId;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
 
         // Fetch recent game stats
         if (playerId != null)
         {
-            recentGameStats = await DbContext.PerformanceStats
+            recentGameStats = await context.PerformanceStats
                 .Where(ps => ps.PlayerId == playerId)
                 .OrderByDescending(ps => ps.Match!.Kickoff)
                 .FirstOrDefaultAsync();
 
             // Fetch total fantasy stats
-            var player = await DbContext.Players
+            var player = await context.Players
                            .Include(p => p.PerformanceStats)
                            .Include(p => p.Team)
                            .FirstOrDefaultAsync(p => p.Id == playerId);
@@ -317,7 +342,7 @@
             }
         }
         // Fetch general data
-        recentMatches = await DbContext.Matches
+        recentMatches = await context.Matches
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)
             .Where(m => m.Kickoff < DateTime.Now)
@@ -325,7 +350,7 @@
             .Take(5)
             .ToListAsync();
 
-        upcomingFixtures = await DbContext.Matches
+        upcomingFixtures = await context.Matches
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)
             .Where(m => m.Kickoff > DateTime.Now)
@@ -333,7 +358,7 @@
             .Take(5)
             .ToListAsync();
 
-        topScorers = (await DbContext.PerformanceStats
+        topScorers = (await context.PerformanceStats
             .Include(ps => ps.Player)
             .GroupBy(ps => ps.PlayerId)
             .Select(g => new
@@ -356,7 +381,7 @@
         // Fetch team-specific data
         if (teamId != null)
         {
-            teamRecentMatches = await DbContext.Matches
+            teamRecentMatches = await context.Matches
                 .Include(m => m.HomeTeam)
                 .Include(m => m.AwayTeam)
                 .Where(m => m.Kickoff < DateTime.Now &&
@@ -365,7 +390,7 @@
                 .Take(5)
                 .ToListAsync();
 
-            teamUpcomingFixtures = await DbContext.Matches
+            teamUpcomingFixtures = await context.Matches
                 .Include(m => m.HomeTeam)
                 .Include(m => m.AwayTeam)
                 .Where(m => m.Kickoff > DateTime.Now &&
@@ -374,7 +399,7 @@
                 .Take(5)
                 .ToListAsync();
 
-            teamTopScorers = (await DbContext.PerformanceStats
+            teamTopScorers = (await context.PerformanceStats
                 .Include(ps => ps.Player)
                 .Where(ps => ps.Player!.TeamId == teamId)
                 .GroupBy(ps => ps.PlayerId)
@@ -395,13 +420,29 @@
                 .Take(3)
                 .ToList();
 
-        }
-    }
+            // Load matches requiring stats entry
+            MatchesToComplete = await context.Matches
+                .Include(m => m.HomeTeam)
+                .Include(m => m.AwayTeam)
+                .Include(m => m.Stats)
+                .Where(m => m.Kickoff < DateTime.Now && !m.Stats.Any())
+                .ToListAsync();
 
-    private class FantasyScorer
-    {
-        public int PlayerId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public int FantasyPoints { get; set; }
+            // Load upcoming matches needing fantasy selections
+            var upcomingMatches = await context.Matches
+                .Include(m => m.HomeTeam)
+                .Include(m => m.AwayTeam)
+                .Where(m => m.Kickoff >= DateTime.Now && m.Kickoff <= DateTime.Now.AddDays(7))
+                .ToListAsync();
+
+            var userSelections = await context.UserFantasySelections
+                .Where(s => s.UserId == UserSession.CurrentUser.Id)
+                .Select(s => s.MatchId)
+                .ToListAsync();
+
+            MatchesNeedingSelections = upcomingMatches
+                .Where(m => !userSelections.Contains(m.Id))
+                .ToList();
+        }
     }
 }

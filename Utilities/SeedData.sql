@@ -1,3 +1,35 @@
+SET IDENTITY_INSERT [dbo].[Teams] ON
+INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (1, N'Oswestry FC')
+INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (2, N'Los Perros')
+INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (3, N'TwoFourNine')
+INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (4, N'Sale FC')
+INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (5, N'Brow Boys')
+INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (6, N'Bin Slippers')
+INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (7, N'Stamford Rejects')
+INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (8, N'Points Match')
+SET IDENTITY_INSERT [dbo].[Teams] OFF
+
+SET IDENTITY_INSERT [dbo].[Players] ON
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (1, N'Jake Heaney', N'GK', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (2, N'George Turner', N'FWD', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (3, N'Harry Garthwaite', N'FWD', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (4, N'David Price', N'DEF', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (5, N'Andy Cooling', N'MID', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (6, N'Luke Sams', N'MID', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (7, N'Paul Durney', N'DEF', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (8, N'Matt Turner', N'DEF', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (9, N'Iain Beddow', N'MID', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (10, N'Ed', N'FWD', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (11, N'Ben Davies', N'FWD', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (12, N'Joe ?', N'FWD', 1)
+INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (13, N'Ringer', N'MID', 1)
+SET IDENTITY_INSERT [dbo].[Players] OFF
+
+SET IDENTITY_INSERT [dbo].[Users] ON
+INSERT INTO [dbo].[Users] ([Id], [Username], [PasswordHash], [PlayerId], [TeamId]) VALUES (1, N'JakeH', N'7NcYcNGWMxapfjrDQIyYNa2M8PPBvHA1J8MCZVNPda4=', 1, 1)
+INSERT INTO [dbo].[Users] ([Id], [Username], [PasswordHash], [PlayerId], [TeamId]) VALUES (2, N'MattT', N'7NcYcNGWMxapfjrDQIyYNa2M8PPBvHA1J8MCZVNPda4=', 1, 8)
+SET IDENTITY_INSERT [dbo].[Users] OFF
+
 SET IDENTITY_INSERT [dbo].[Matches] ON
 INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (2, N'2025-03-13 20:30:00', 4, 1, 0, 5)
 INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (3, N'2025-03-20 19:00:00', 6, 1, 1, 5)
@@ -117,33 +149,13 @@ INSERT INTO [dbo].[PerformanceStats] ([Id], [MatchId], [PlayerId], [Appearance],
 INSERT INTO [dbo].[PerformanceStats] ([Id], [MatchId], [PlayerId], [Appearance], [Goals], [Assists], [YellowCard], [RedCard], [PenaltySaves], [CleanSheet], [PenaltyMissed]) VALUES (104, 10, 13, 0, 0, 0, 0, 0, 0, 0, 0)
 SET IDENTITY_INSERT [dbo].[PerformanceStats] OFF
 
-SET IDENTITY_INSERT [dbo].[Players] ON
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (1, N'Jake Heaney', N'GK', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (2, N'George Turner', N'FWD', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (3, N'Harry Garthwaite', N'FWD', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (4, N'David Price', N'DEF', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (5, N'Andy Cooling', N'MID', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (6, N'Luke Sams', N'MID', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (7, N'Paul Durney', N'DEF', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (8, N'Matt Turner', N'DEF', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (9, N'Iain Beddow', N'MID', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (10, N'Ed', N'FWD', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (11, N'Ben Davies', N'FWD', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (12, N'Joe ?', N'FWD', 1)
-INSERT INTO [dbo].[Players] ([Id], [Name], [Position], [TeamId]) VALUES (13, N'Ringer', N'MID', 1)
-SET IDENTITY_INSERT [dbo].[Players] OFF
-
-SET IDENTITY_INSERT [dbo].[Teams] ON
-INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (1, N'Oswestry FC')
-INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (2, N'Los Perros')
-INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (3, N'TwoFourNine')
-INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (4, N'Sale FC')
-INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (5, N'Brow Boys')
-INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (6, N'Bin Slippers')
-INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (7, N'Stamford Rejects')
-INSERT INTO [dbo].[Teams] ([Id], [Name]) VALUES (8, N'Points Match')
-SET IDENTITY_INSERT [dbo].[Teams] OFF
-
-SET IDENTITY_INSERT [dbo].[Users] ON
-INSERT INTO [dbo].[Users] ([Id], [Username], [PasswordHash], [PlayerId], [TeamId]) VALUES (1, N'JakeH', N'7NcYcNGWMxapfjrDQIyYNa2M8PPBvHA1J8MCZVNPda4=', 1, 1)
-SET IDENTITY_INSERT [dbo].[Users] OFF
+SET IDENTITY_INSERT [dbo].[UserFantasySelections] ON
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (1, 2, 1, N'[1,3,4]', 1, 0)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (2, 3, 1, N'[5,9,1]', NULL, 0)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (3, 4, 1, N'[2,5,3]', NULL, 0)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (4, 5, 1, N'[1,3,6]', NULL, 0)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (5, 6, 1, N'[7,1,3]', NULL, 0)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (6, 7, 1, N'[1,5,3]', NULL, 0)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (7, 8, 1, N'[5,6,9]', NULL, 0)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (9, 2, 3, N'[1,4,3]', 3, 0)
+SET IDENTITY_INSERT [dbo].[UserFantasySelections] OFF

@@ -1,0 +1,112 @@
+﻿@page "/league-table"
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+
+<div class="container my-5">
+    <h3 class="text-center my-4 text-primary">Fantasy League Table</h3>
+    <div class="table-responsive shadow rounded">
+        <table class="table table-striped table-hover table-bordered align-middle">
+            <thead class="bg-primary text-white">
+                <tr>
+                    <th class="text-center">Rank</th>
+                    <th>Username</th>
+                    <th class="text-center">Total Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (LeagueEntries.Any())
+                {
+                    @foreach (var (user, index) in LeagueEntries.Select((entry, i) => (entry, i + 1)))
+                    {
+                        <tr>
+                            <td class="text-center">
+                                @if (index == 1)
+                                {
+                                    <span class="badge bg-warning text-dark fs-6">🥇</span>
+                                }
+                                else if (index == 2)
+                                {
+                                    <span class="badge bg-secondary text-white fs-6">🥈</span>
+                                }
+                                else if (index == 3)
+                                {
+                                    <span class="badge bg-danger text-white fs-6">🥉</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-dark">@index</span>
+                                }
+                            </td>
+                            <td>@user.Username</td>
+                            <td class="text-center">
+                                <span class="badge bg-success fs-5">@user.TotalPoints</span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">No data available</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<LeagueEntry> LeagueEntries = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        // Load all users
+        var users = await context.Users.ToListAsync();
+
+        // Load all fantasy selections
+        var allSelections = await context.UserFantasySelections.ToListAsync();
+
+        // Load performance stats
+        var allMatchIds = allSelections.Select(s => s.MatchId).Distinct().ToList();
+        var performanceStats = await context.PerformanceStats
+            .Where(ps => allMatchIds.Contains(ps.MatchId))
+            .ToListAsync();
+
+        // Calculate total points for each user
+        LeagueEntries = users.Select(user =>
+        {
+            var userSelections = allSelections.Where(s => s.UserId == user.Id).ToList();
+            var totalPoints = 0;
+
+            foreach (var selection in userSelections)
+            {
+                var matchStats = performanceStats.Where(ps => ps.MatchId == selection.MatchId).ToList();
+
+                foreach (var playerId in selection.Players)
+                {
+                    var playerStats = matchStats.Where(ps => ps.PlayerId == playerId).ToList();
+                    var points = PointCalculator.CalculateTotalPoints(playerStats);
+
+                    // Double points for captain
+                    if (selection.CaptainedPlayerId == playerId)
+                    {
+                        points *= 2;
+                    }
+
+                    totalPoints += points;
+                }
+            }
+
+            return new LeagueEntry
+                {
+                    Username = user.Username,
+                    TotalPoints = totalPoints
+                };
+        })
+        .OrderByDescending(entry => entry.TotalPoints)
+        .ToList();
+
+        StateHasChanged();
+    }
+}

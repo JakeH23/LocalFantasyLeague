@@ -1,11 +1,11 @@
 ﻿@page "/matches"
-@inject IDbContextFactory<LocalFantasyLeague.Data.LocalFantasyLeagueContext> DbFactory
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
 @inject UserSession UserSession
 
-<h3>All Matches</h3>
+<h3 class="text-center my-4 text-primary">All Matches</h3>
 @if (UserSession.CurrentUser != null)
 {
-    <a href="/matches/create" class="btn btn-primary mb-3">Add Match</a>
+    <a href="/matches/create" class="btn btn-outline-primary mb-3">Add Match</a>
 }
 <div class="mb-3">
     <label for="teamFilter" class="form-label">Filter by Team:</label>
@@ -19,53 +19,50 @@
 </div>
 
 <div class="table-responsive">
-    <div class="table-responsive">
-        <table class="table table-striped table-hover table-bordered">
-            <thead>
+    <table class="table table-striped table-hover table-bordered">
+        <thead class="bg-light text-dark">
+            <tr>
+                <th>Kickoff</th>
+                <th>Home</th>
+                <th>Away</th>
+                <th>Result</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var match in FilteredMatches)
+            {
                 <tr>
-                    <th>Kickoff</th>
-                    <th>Home</th>
-                    <th>Away</th>
-                    <th>Result</th>
-                    <th>Actions</th>
+                    <td>@match.Kickoff.ToString("MMM dd, yyyy")</td>
+                    <td>@match.HomeTeam.Name</td>
+                    <td>@match.AwayTeam.Name</td>
+                    <td>
+                        @if (match.Kickoff < DateTime.Now)
+                        {
+                            <span class="badge bg-success">@match.HomeTeamGoals - @match.AwayTeamGoals</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">TBD</span>
+                        }
+                    </td>
+                    <td>
+                        @if (UserSession.CurrentUser == null)
+                        {
+                            <a href="/matches/details/@match.Id" class="btn btn-outline-info btn-sm">Details</a>
+                        }
+                        else
+                        {
+                            <a href="/matches/details/@match.Id" class="btn btn-outline-info btn-sm me-2">Details</a>
+                            <a href="/matches/edit/@match.Id" class="btn btn-outline-warning btn-sm me-2">Edit</a>
+                            <a href="/matches/delete/@match.Id" class="btn btn-outline-danger btn-sm">Delete</a>
+                        }
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach (var match in FilteredMatches)
-                {
-                    <tr>
-                        <td>@match.Kickoff.ToString("g")</td>
-                        <td>@match.HomeTeam.Name</td>
-                        <td>@match.AwayTeam.Name</td>
-                        <td>
-                            @if (match.Kickoff < DateTime.Now)
-                            {
-                                @($"{match.HomeTeamGoals} - {match.AwayTeamGoals}")
-                            }
-                            else
-                            {
-                                <span class="text-muted">TBD</span>
-                            }
-                        </td>
-                        <td>
-                            @if (UserSession.CurrentUser == null)
-                            {
-                                <a href="/matches/details/@match.Id">Details</a>
-                            }
-                            else
-                            {
-                                <a href="/matches/details/@match.Id">Details</a>
-                                <a href="/matches/edit/@match.Id">Edit</a>
-                                <a href="/matches/delete/@match.Id">Delete</a>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+            }
+        </tbody>
+    </table>
 </div>
-
 
 @code {
     private List<Match> Matches = new();
@@ -75,14 +72,14 @@
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbFactory.CreateDbContext();
+        await using var context = await DbFactory.CreateDbContextAsync();
         Matches = await context.Matches
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)
             .OrderBy(m => m.Kickoff)
             .ToListAsync();
         Teams = await context.Teams.ToListAsync();
-        FilteredMatches = Matches; // Initially show all players
+        FilteredMatches = Matches; // Initially show all matches
     }
 
     private void FilterMatchesByTeam(ChangeEventArgs e)
@@ -95,10 +92,9 @@
         else
         {
             SelectedTeamId = null;
-            FilteredMatches = Matches; // Show all players if no team is selected
+            FilteredMatches = Matches; // Show all matches if no team is selected
         }
 
-        // Notify Blazor to re-render the UI
         StateHasChanged();
     }
 }

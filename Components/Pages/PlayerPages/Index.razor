@@ -3,10 +3,10 @@
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
 @inject UserSession UserSession
 
-<h3>Players</h3>
+<h3 class="text-center my-4 text-primary">Players</h3>
 @if (UserSession.CurrentUser != null)
 {
-    <a class="btn btn-primary mb-3" href="/players/create">Add Player</a>
+    <a class="btn btn-outline-primary mb-3" href="/players/create">Add Player</a>
 }
 <div class="mb-3">
     <label for="teamFilter" class="form-label">Filter by Team:</label>
@@ -19,30 +19,38 @@
     </select>
 </div>
 
-<table class="table">
-    <thead><tr><th>Name</th><th>Team</th><th>Actions</th></tr></thead>
-    <tbody>
-        @foreach (var p in FilteredPlayers)
-        {
+<div class="table-responsive">
+    <table class="table table-striped table-hover table-bordered">
+        <thead class="bg-light text-dark">
             <tr>
-                <td>@p.Name</td>
-                <td>@p.Team?.Name</td>
-                <td>
-                    @if (UserSession.CurrentUser == null)
-                    {
-                        <a href="/players/details/@p.Id">Details</a>
-                    }
-                    else
-                    {
-                        <a href="/players/details/@p.Id">Details</a>
-                        <a href="/players/edit/@p.Id">Edit</a>
-                        <a href="/players/delete/@p.Id">Delete</a>
-                    }
-                </td>
+                <th>Name</th>
+                <th>Team</th>
+                <th>Actions</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var p in FilteredPlayers)
+            {
+                <tr>
+                    <td>@p.Name</td>
+                    <td>@p.Team?.Name</td>
+                    <td>
+                        @if (UserSession.CurrentUser == null)
+                        {
+                            <a href="/players/details/@p.Id" class="btn btn-outline-info btn-sm">Details</a>
+                        }
+                        else
+                        {
+                            <a href="/players/details/@p.Id" class="btn btn-outline-info btn-sm me-2">Details</a>
+                            <a href="/players/edit/@p.Id" class="btn btn-outline-warning btn-sm me-2">Edit</a>
+                            <a href="/players/delete/@p.Id" class="btn btn-outline-danger btn-sm">Delete</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 
 @code {
     private List<Player> Players = new();
@@ -52,7 +60,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        using var db = await DbFactory.CreateDbContextAsync();
+        await using var db = await DbFactory.CreateDbContextAsync();
         Players = await db.Players.Include(p => p.Team).ToListAsync();
         Teams = await db.Teams.ToListAsync();
         FilteredPlayers = Players; // Initially show all players
@@ -71,7 +79,6 @@
             FilteredPlayers = Players; // Show all players if no team is selected
         }
 
-        // Notify Blazor to re-render the UI
         StateHasChanged();
     }
 }
