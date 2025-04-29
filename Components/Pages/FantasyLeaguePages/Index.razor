@@ -1,5 +1,5 @@
 ﻿@page "/league-table"
-@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@using LocalFantasyLeague.Models.DbSets
 
 <div class="container my-5">
     <h3 class="text-center my-4 text-primary">Fantasy League Table</h3>
@@ -13,9 +13,9 @@
                 </tr>
             </thead>
             <tbody>
-                @if (LeagueEntries.Any())
+                @if (_leagueEntries.Any())
                 {
-                    @foreach (var (user, index) in LeagueEntries.Select((entry, i) => (entry, i + 1)))
+                    @foreach (var (user, index) in _leagueEntries.Select((entry, i) => (entry, i + 1)))
                     {
                         <tr>
                             <td class="text-center">
@@ -55,26 +55,23 @@
 </div>
 
 @code {
-    private List<LeagueEntry> LeagueEntries = new();
+    private List<LeagueEntry> _leagueEntries = [];
 
     protected override async Task OnInitializedAsync()
     {
-        await using var context = await DbFactory.CreateDbContextAsync();
-
         // Load all users
-        var users = await context.Users.ToListAsync();
+        var users = await DataService.GetAllAsync<User>();
 
         // Load all fantasy selections
-        var allSelections = await context.UserFantasySelections.ToListAsync();
+        var allSelections = await DataService.GetAllAsync<UserFantasySelection>();
 
         // Load performance stats
         var allMatchIds = allSelections.Select(s => s.MatchId).Distinct().ToList();
-        var performanceStats = await context.PerformanceStats
-            .Where(ps => allMatchIds.Contains(ps.MatchId))
-            .ToListAsync();
+        var performanceStats = await DataService.GetAllAsync<PerformanceStat>();
+        performanceStats = performanceStats.Where(ps => allMatchIds.Contains(ps.MatchId)).ToList();
 
         // Calculate total points for each user
-        LeagueEntries = users.Select(user =>
+        _leagueEntries = users.Select(user =>
         {
             var userSelections = allSelections.Where(s => s.UserId == user.Id).ToList();
             var totalPoints = 0;
@@ -98,11 +95,7 @@
                 }
             }
 
-            return new LeagueEntry
-                {
-                    Username = user.Username,
-                    TotalPoints = totalPoints
-                };
+            return new LeagueEntry { Username = user.Username, TotalPoints = totalPoints };
         })
         .OrderByDescending(entry => entry.TotalPoints)
         .ToList();

@@ -1,7 +1,8 @@
 ﻿@page "/players"
+@using LocalFantasyLeague.Models.DbSets
+@using LocalFantasyLeague.Models.DbSets
 @rendermode InteractiveServer
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
-@inject UserSession UserSession
 
 <h3 class="text-center my-4 text-primary">Players</h3>
 @if (UserSession.CurrentUser != null)
@@ -12,7 +13,7 @@
     <label for="teamFilter" class="form-label">Filter by Team:</label>
     <select id="teamFilter" class="form-select" @onchange="FilterPlayersByTeam">
         <option value="">All Teams</option>
-        @foreach (var team in Teams)
+        @foreach (var team in _teams)
         {
             <option value="@team.Id">@team.Name</option>
         }
@@ -29,7 +30,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var p in FilteredPlayers)
+            @foreach (var p in _filteredPlayers)
             {
                 <tr>
                     <td>@p.Name</td>
@@ -53,30 +54,32 @@
 </div>
 
 @code {
-    private List<Player> Players = new();
-    private List<Player> FilteredPlayers = new();
-    private List<Team> Teams = new();
-    private int? SelectedTeamId;
+    private List<Player> _players = [];
+    private List<Player> _filteredPlayers = [];
+    private List<Team> _teams = [];
+    private int? _selectedTeamId;
 
     protected override async Task OnInitializedAsync()
     {
         await using var db = await DbFactory.CreateDbContextAsync();
-        Players = await db.Players.Include(p => p.Team).ToListAsync();
-        Teams = await db.Teams.ToListAsync();
-        FilteredPlayers = Players; // Initially show all players
+        _players = await db.Players.Include(p => p.Team).ToListAsync();
+
+        _teams = await DataService.GetAllAsync<Team>();
+
+        _filteredPlayers = _players; // Initially show all players
     }
 
     private void FilterPlayersByTeam(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out var teamId))
         {
-            SelectedTeamId = teamId;
-            FilteredPlayers = Players.Where(p => p.TeamId == teamId).ToList();
+            _selectedTeamId = teamId;
+            _filteredPlayers = _players.Where(p => p.TeamId == teamId).ToList();
         }
         else
         {
-            SelectedTeamId = null;
-            FilteredPlayers = Players; // Show all players if no team is selected
+            _selectedTeamId = null;
+            _filteredPlayers = _players; // Show all players if no team is selected
         }
 
         StateHasChanged();

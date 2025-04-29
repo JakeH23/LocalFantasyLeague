@@ -1,6 +1,6 @@
-﻿namespace LocalFantasyLeague.Models
+﻿namespace LocalFantasyLeague.Models.DbSets
 {
-    public class PerformanceStat
+    public class PerformanceStat : IEntity
     {
         public int Id { get; set; }
 

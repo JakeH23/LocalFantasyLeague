@@ -1,20 +1,14 @@
-﻿using LocalFantasyLeague.Models;
+﻿using LocalFantasyLeague.Models.DbSets;
 using Microsoft.EntityFrameworkCore;
 
 namespace LocalFantasyLeague.Data
 {
-    public class LocalFantasyLeagueContext : DbContext
+    public class LocalFantasyLeagueContext(DbContextOptions<LocalFantasyLeagueContext> options) : DbContext(options)
     {
-        public LocalFantasyLeagueContext(DbContextOptions<LocalFantasyLeagueContext> options)
-            : base(options)
-        {
-        }
-
         public DbSet<Player> Players { get; set; } = default!;
         public DbSet<Team> Teams { get; set; } = default!;
         public DbSet<Match> Matches { get; set; } = default!;
         public DbSet<PerformanceStat> PerformanceStats { get; set; } = default!;
-        public DbSet<Bet> Bets { get; set; } = default!;
         public DbSet<User> Users { get; set; } = default!;
         public DbSet<UserFantasySelection> UserFantasySelections { get; set; } = default!;
 

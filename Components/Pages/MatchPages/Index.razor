@@ -1,6 +1,6 @@
 ﻿@page "/matches"
+@using LocalFantasyLeague.Models.DbSets
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
-@inject UserSession UserSession
 
 <h3 class="text-center my-4 text-primary">All Matches</h3>
 @if (UserSession.CurrentUser != null)
@@ -11,7 +11,7 @@
     <label for="teamFilter" class="form-label">Filter by Team:</label>
     <select id="teamFilter" class="form-select" @onchange="FilterMatchesByTeam">
         <option value="">All Teams</option>
-        @foreach (var team in Teams)
+        @foreach (var team in _teams)
         {
             <option value="@team.Id">@team.Name</option>
         }
@@ -30,7 +30,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var match in FilteredMatches)
+            @foreach (var match in _filteredMatches)
             {
                 <tr>
                     <td>@match.Kickoff.ToString("MMM dd, yyyy")</td>
@@ -65,34 +65,36 @@
 </div>
 
 @code {
-    private List<Match> Matches = new();
-    private List<Match> FilteredMatches = new();
-    private List<Team> Teams = new();
-    private int? SelectedTeamId;
+    private List<Match> _matches = [];
+    private List<Match> _filteredMatches = [];
+    private List<Team> _teams = [];
+    private int? _selectedTeamId;
 
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
-        Matches = await context.Matches
+
+        _matches = await context.Matches
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)
             .OrderBy(m => m.Kickoff)
             .ToListAsync();
-        Teams = await context.Teams.ToListAsync();
-        FilteredMatches = Matches; // Initially show all matches
+        
+        _teams = await DataService.GetAllAsync<Team>();
+        _filteredMatches = _matches; // Initially show all matches
     }
 
     private void FilterMatchesByTeam(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out var teamId))
         {
-            SelectedTeamId = teamId;
-            FilteredMatches = Matches.Where(p => p.HomeTeamId == teamId || p.AwayTeamId == teamId).ToList();
+            _selectedTeamId = teamId;
+            _filteredMatches = _matches.Where(p => p.HomeTeamId == teamId || p.AwayTeamId == teamId).ToList();
         }
         else
         {
-            SelectedTeamId = null;
-            FilteredMatches = Matches; // Show all matches if no team is selected
+            _selectedTeamId = null;
+            _filteredMatches = _matches; // Show all matches if no team is selected
         }
 
         StateHasChanged();

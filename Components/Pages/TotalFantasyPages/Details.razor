@@ -1,4 +1,5 @@
 ﻿@page "/fantasy-details"
+@using LocalFantasyLeague.Models.DbSets
 @rendermode InteractiveServer
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
 
@@ -8,7 +9,7 @@
     <label for="teamFilter" class="form-label">Filter by Team:</label>
     <select id="teamFilter" class="form-select" @onchange="FilterPlayersByTeam">
         <option value="">All Teams</option>
-        @foreach (var team in Teams)
+        @foreach (var team in _teams)
         {
             <option value="@team.Id">@team.Name</option>
         }
@@ -33,7 +34,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var player in FilteredPlayersWithPoints.OrderByDescending(p => p.TotalPoints))
+            @foreach (var player in _filteredPlayersWithPoints.OrderByDescending(p => p.TotalPoints))
             {
                 <tr>
                     <td>@player.Name</td>
@@ -55,18 +56,19 @@
 
 
 @code {
-    private List<PlayerWithPoints> PlayersWithPoints = new();
-    private List<PlayerWithPoints> FilteredPlayersWithPoints = new();
-    private List<Team> Teams = new();
-    private int? SelectedTeamId;
+    private List<PlayerWithPoints> _playersWithPoints = [];
+    private List<PlayerWithPoints> _filteredPlayersWithPoints = [];
+    private List<Team> _teams = [];
+    private int? _selectedTeamId;
 
     protected override async Task OnInitializedAsync()
     {
-        using var db = await DbFactory.CreateDbContextAsync();
+        await using var db = await DbFactory.CreateDbContextAsync();
         var players = await db.Players.Include(p => p.PerformanceStats).Include(p => p.Team).ToListAsync();
-        Teams = await db.Teams.ToListAsync();
 
-        PlayersWithPoints = players.Select(player => new PlayerWithPoints
+        _teams = await DataService.GetAllAsync<Team>();
+
+        _playersWithPoints = players.Select(player => new PlayerWithPoints
             {
                 Name = player.Name,
                 TeamName = player.Team?.Name ?? "No Team",
@@ -82,22 +84,22 @@
                 TotalPoints = PointCalculator.CalculateTotalPoints(player.PerformanceStats)
             }).ToList();
 
-        FilteredPlayersWithPoints = PlayersWithPoints; // Initially show all players
+        _filteredPlayersWithPoints = _playersWithPoints; // Initially show all players
     }
 
     private void FilterPlayersByTeam(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out var teamId))
         {
-            SelectedTeamId = teamId;
-            FilteredPlayersWithPoints = PlayersWithPoints
+            _selectedTeamId = teamId;
+            _filteredPlayersWithPoints = _playersWithPoints
                 .Where(p => p.TeamId == teamId)
                 .ToList();
         }
         else
         {
-            SelectedTeamId = null;
-            FilteredPlayersWithPoints = PlayersWithPoints; // Show all players if no team is selected
+            _selectedTeamId = null;
+            _filteredPlayersWithPoints = _playersWithPoints; // Show all players if no team is selected
         }
 
         StateHasChanged(); // Notify Blazor to re-render the UI

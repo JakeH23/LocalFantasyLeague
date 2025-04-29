@@ -1,42 +1,40 @@
 ﻿@page "/register"
+@using LocalFantasyLeague.Models.DbSets
 @rendermode InteractiveServer
-@using LocalFantasyLeague.Services;
-@inject LocalFantasyLeagueContext DbContext
-@inject NavigationManager Navigation
 
 <div class="register-container">
     <div class="register-card">
         <h3 class="text-center">Register</h3>
 
-        @if (errorMessage is not null)
+        @if (_errorMessage is not null)
         {
-            <p class="error-message">@errorMessage</p>
+            <p class="error-message">@_errorMessage</p>
         }
 
-        <EditForm method="post" Model="registerModel" OnValidSubmit="HandleRegister" FormName="create" Enhance>
+        <EditForm method="post" Model="_registerModel" OnValidSubmit="HandleRegister" FormName="create" Enhance>
             <DataAnnotationsValidator />
             <ValidationSummary />
 
             <div class="form-group">
                 <label for="username">Username</label>
-                <InputText id="username" class="form-control" @bind-Value="registerModel.Username" placeholder="Enter your username" />
+                <InputText id="username" class="form-control" @bind-Value="_registerModel.Username" placeholder="Enter your username" />
             </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <InputText id="password" class="form-control" @bind-Value="registerModel.Password" type="password" placeholder="Enter your password" />
+                <InputText id="password" class="form-control" @bind-Value="_registerModel.Password" type="password" placeholder="Enter your password" />
             </div>
 
             <div class="form-group">
                 <label for="confirm-password">Confirm Password</label>
-                <InputText id="confirm-password" class="form-control" @bind-Value="registerModel.ConfirmPassword" type="password" placeholder="Confirm your password" />
+                <InputText id="confirm-password" class="form-control" @bind-Value="_registerModel.ConfirmPassword" type="password" placeholder="Confirm your password" />
             </div>
 
             <div class="form-group">
                 <label for="team">Select Team</label>
-                <InputSelect id="team" class="form-control" @bind-Value="registerModel.TeamId">
+                <InputSelect id="team" class="form-control" @bind-Value="_registerModel.TeamId">
                     <option value="">-- Select a Team --</option>
-                    @foreach (var team in teams)
+                    @foreach (var team in _teams)
                     {
                         <option value="@team.Id">@team.Name</option>
                     }
@@ -45,9 +43,9 @@
 
             <div class="form-group">
                 <label for="player">Select Player</label>
-                <InputSelect id="player" class="form-control" @bind-Value="registerModel.PlayerId">
+                <InputSelect id="player" class="form-control" @bind-Value="_registerModel.PlayerId">
                     <option value="">-- Select a Player --</option>
-                    @foreach (var player in players)
+                    @foreach (var player in _players)
                     {
                         <option value="@player.Id">@player.Name</option>
                     }
@@ -62,54 +60,43 @@
 </div>
 
 @code {
-    private RegisterModel registerModel = new();
-    private string? errorMessage;
-    private List<Team> teams = new();
-    private List<Player> players = new();
+    private readonly RegisterModel _registerModel = new();
+    private string? _errorMessage;
+    private List<Team> _teams = [];
+    private List<Player> _players = [];
 
     protected override async Task OnInitializedAsync()
     {
-        teams = await DbContext.Teams.ToListAsync();
-        players = await DbContext.Players.ToListAsync();
+        _teams = await DataService.GetAllAsync<Team>();
+        _players = await DataService.GetAllAsync<Player>();
     }
 
     private async Task HandleRegister()
     {
-        errorMessage = null;
+        _errorMessage = null;
 
-        if (registerModel.Password != registerModel.ConfirmPassword)
+        if (_registerModel.Password != _registerModel.ConfirmPassword)
         {
-            errorMessage = "Passwords do not match.";
+            _errorMessage = "Passwords do not match.";
             return;
         }
 
-        var existingUser = await DbContext.Users
-            .AnyAsync(u => u.Username == registerModel.Username);
-
-        if (existingUser)
+        if (await UserService.UserExistsAsync(_registerModel.Username))
         {
-            errorMessage = "Username already exists.";
+            _errorMessage = "Username already exists.";
             return;
         }
 
         var user = new User
             {
-                Username = registerModel.Username,
-                PasswordHash = ComputeSha256Hash(registerModel.Password),
-                TeamId = registerModel.TeamId == 0 ? null : registerModel.TeamId,
-                PlayerId = registerModel.PlayerId == 0 ? null : registerModel.PlayerId
+                Username = _registerModel.Username,
+                PasswordHash = UserService.ComputeSha256Hash(_registerModel.Password),
+                TeamId = _registerModel.TeamId == 0 ? null : _registerModel.TeamId,
+                PlayerId = _registerModel.PlayerId == 0 ? null : _registerModel.PlayerId
             };
 
-        DbContext.Users.Add(user);
-        await DbContext.SaveChangesAsync();
+        await DataService.AddAsync(user);
 
         Navigation.NavigateTo("/login");
-    }
-
-    private string ComputeSha256Hash(string rawData)
-    {
-        using var sha256 = SHA256.Create();
-        byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(rawData));
-        return Convert.ToBase64String(bytes);
     }
 }

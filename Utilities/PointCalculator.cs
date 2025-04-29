@@ -1,4 +1,4 @@
-using LocalFantasyLeague.Models;
+using LocalFantasyLeague.Models.DbSets;
 
 namespace LocalFantasyLeague.Utilities
 {

@@ -1,12 +1,14 @@
-﻿namespace LocalFantasyLeague.Models
+﻿using LocalFantasyLeague.Models.DbSets;
+
+namespace LocalFantasyLeague.Models
 {
     public class UserSession
     {
-        public event Action OnChange;
+        public event Action OnChange = null!;
 
-        private User _currentUser;
+        private User? _currentUser;
 
-        public User CurrentUser
+        public User? CurrentUser
         {
             get => _currentUser;
             set

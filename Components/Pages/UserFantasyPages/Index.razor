@@ -1,6 +1,7 @@
 ﻿@page "/user-fantasy"
+@using LocalFantasyLeague.Models.DbSets
+@using LocalFantasyLeague.Models.DbSets
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
-@inject UserSession UserSession
 
 <h3 class="text-center my-4 text-secondary">My Fantasy Picks</h3>
 
@@ -16,13 +17,13 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var match in UpcomingMatches)
+            @foreach (var match in _upcomingMatches)
             {
                 <tr>
                     <td>@match.Kickoff.ToString("d")</td>
-                    <td>@(match.HomeTeamId == UserSession.CurrentUser.TeamId ? match.AwayTeam.Name : match.HomeTeam.Name)</td>
+                    <td>@(match.HomeTeamId == UserSession.CurrentUser?.TeamId ? match.AwayTeam?.Name : match.HomeTeam?.Name)</td>
                     <td>
-                        @if (UserFantasySelections.Any(selection => selection.MatchId == match.Id))
+                        @if (_userFantasySelections.Any(selection => selection.MatchId == match.Id))
                         {
                             <a href="/user-fantasy/edit/@match.Id" class="btn btn-outline-warning btn-sm">Edit Team</a>
                         }
@@ -51,14 +52,14 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var match in PastMatches)
+            @foreach (var match in _pastMatches)
             {
-                var selection = UserFantasySelections.FirstOrDefault(s => s.MatchId == match.Id);
+                var selection = _userFantasySelections.FirstOrDefault(s => s.MatchId == match.Id);
                 if (selection != null)
                 {
                     <tr>
                         <td>@match.Kickoff.ToString("d")</td>
-                        <td>@(match.HomeTeamId == UserSession.CurrentUser.TeamId ? match.AwayTeam.Name : match.HomeTeam.Name)</td>
+                        <td>@(match.HomeTeamId == UserSession.CurrentUser?.TeamId ? match.AwayTeam?.Name : match.HomeTeam?.Name)</td>
                         <td>
                             @if (selection.Players.Any())
                             {
@@ -66,9 +67,9 @@
                                     @foreach (var playerInfo in selection.Players
                                    .Select(playerId => new
                                    {
-                                       Player = Players.FirstOrDefault(p => p.Id == playerId),
-                                       Points = PlayerPoints.ContainsKey(match.Id) && PlayerPoints[match.Id].ContainsKey(playerId)
-                                   ? PlayerPoints[match.Id][playerId]
+                                       Player = _players.FirstOrDefault(p => p.Id == playerId),
+                                       Points = _playerPoints.ContainsKey(match.Id) && _playerPoints[match.Id].ContainsKey(playerId)
+                                   ? _playerPoints[match.Id][playerId]
                                    : 0,
                                        IsCaptain = selection.CaptainedPlayerId == playerId
                                    })
@@ -89,7 +90,7 @@
                             }
                         </td>
                         <td>
-                            <span class="badge bg-success fs-5">@GameTotalPoints[match.Id]</span>
+                            <span class="badge bg-success fs-5">@_gameTotalPoints[match.Id]</span>
                         </td>
                         <td>
                             <a href="/user-fantasy/details/@selection.Id" class="btn btn-outline-info btn-sm me-2">Fantasy Details</a>
@@ -102,65 +103,55 @@
         <tfoot>
             <tr class="bg-light">
                 <td colspan="4" class="text-end fw-bold text-dark">Overall Total Points:</td>
-                <td class="fw-bold text-success fs-4">@OverallTotalPoints</td>
+                <td class="fw-bold text-success fs-4">@_overallTotalPoints</td>
             </tr>
         </tfoot>
     </table>
 </div>
 
 @code {
-    private List<Match> Matches = new();
-    private List<Match> UpcomingMatches = new();
-    private List<Match> PastMatches = new();
-    private List<Team> Teams = new();
-    private List<UserFantasySelection> UserFantasySelections = new();
-    private List<Player> Players = new();
-    private Dictionary<int, Dictionary<int, int>> PlayerPoints = new();
-    private Dictionary<int, int> GameTotalPoints = new();
-    private int OverallTotalPoints = 0;
+    private List<Match> _matches = [];
+    private List<Match> _upcomingMatches = [];
+    private List<Match> _pastMatches = [];
+    private List<UserFantasySelection> _userFantasySelections = [];
+    private List<Player> _players = [];
+    private readonly Dictionary<int, Dictionary<int, int>> _playerPoints = new();
+    private readonly Dictionary<int, int> _gameTotalPoints = new();
+    private int _overallTotalPoints = 0;
 
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
 
         // Load matches
-        Matches = await context.Matches
+        _matches = await context.Matches
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)
             .OrderBy(m => m.Kickoff)
             .ToListAsync();
-        Matches = Matches.Where(x => x.HomeTeamId == UserSession.CurrentUser.TeamId || x.AwayTeamId == UserSession.CurrentUser.TeamId).ToList();
+        _matches = _matches.Where(x => x.HomeTeamId == UserSession.CurrentUser!.TeamId || x.AwayTeamId == UserSession.CurrentUser.TeamId).ToList();
 
         // Split matches into upcoming and past
         var now = DateTime.Now;
-        UpcomingMatches = Matches.Where(m => m.Kickoff >= now).ToList();
-        PastMatches = Matches.Where(m => m.Kickoff < now).ToList();
-
-        // Load teams
-        Teams = await context.Teams.ToListAsync();
-        Teams = Teams.Where(x => x.Id == UserSession.CurrentUser.TeamId).ToList();
+        _upcomingMatches = _matches.Where(m => m.Kickoff >= now).ToList();
+        _pastMatches = _matches.Where(m => m.Kickoff < now).ToList();
 
         // Load user fantasy selections
-        UserFantasySelections = await context.UserFantasySelections
-            .Where(selection => selection.UserId == UserSession.CurrentUser.Id)
-            .ToListAsync();
+        _userFantasySelections = await context.UserFantasySelections.Where(selection => selection.UserId == UserSession.CurrentUser!.Id).ToListAsync();
 
         // Load players
-        var playerIds = UserFantasySelections.SelectMany(s => s.Players).Distinct().ToList();
-        Players = await context.Players
-            .Where(p => playerIds.Contains(p.Id))
-            .ToListAsync();
+        var playerIds = _userFantasySelections.SelectMany(s => s.Players).Distinct().ToList();
+        _players = await context.Players.Where(p => playerIds.Contains(p.Id)).ToListAsync();
 
         // Load performance stats and calculate points
-        var pastMatchIds = PastMatches.Select(m => m.Id).ToList();
-        var performanceStats = await context.PerformanceStats
-            .Where(ps => pastMatchIds.Contains(ps.MatchId))
-            .ToListAsync();
+        var pastMatchIds = _pastMatches.Select(m => m.Id).ToList();
 
-        foreach (var selection in UserFantasySelections)
+        var performanceStats = await context.PerformanceStats.Where(ps => pastMatchIds.Contains(ps.MatchId)).ToListAsync();
+
+        foreach (var selection in _userFantasySelections)
         {
             var matchStats = performanceStats.Where(ps => ps.MatchId == selection.MatchId).ToList();
-            int gameTotal = 0;
+            var gameTotal = 0;
 
             foreach (var playerId in selection.Players)
             {
@@ -173,17 +164,17 @@
                     points *= 2;
                 }
 
-                if (!PlayerPoints.ContainsKey(selection.MatchId))
+                if (!_playerPoints.ContainsKey(selection.MatchId))
                 {
-                    PlayerPoints[selection.MatchId] = new Dictionary<int, int>();
+                    _playerPoints[selection.MatchId] = new Dictionary<int, int>();
                 }
 
-                PlayerPoints[selection.MatchId][playerId] = points;
+                _playerPoints[selection.MatchId][playerId] = points;
                 gameTotal += points;
             }
 
-            GameTotalPoints[selection.MatchId] = gameTotal;
-            OverallTotalPoints += gameTotal;
+            _gameTotalPoints[selection.MatchId] = gameTotal;
+            _overallTotalPoints += gameTotal;
         }
 
         StateHasChanged();

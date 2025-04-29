@@ -1,7 +1,7 @@
 ﻿@page "/matches/edit/{id:int}"
+@using LocalFantasyLeague.Models.DbSets
 @rendermode InteractiveServer
-@inject NavigationManager NavigationManager
-@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbContextFactory
 
 @if (Match == null)
 {
@@ -153,15 +153,16 @@ else
     [Parameter]
     public int Id { get; set; }
 
-    private LocalFantasyLeagueContext context = default!;
     private Match? Match { get; set; }
     private DateTime KickoffDate { get; set; }
     private string KickoffTime { get; set; } = "00:00";
+    private LocalFantasyLeagueContext _context { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        context = DbFactory.CreateDbContext();
-        Match = await context.Matches
+        _context = await DbContextFactory.CreateDbContextAsync();
+
+        Match = await _context.Matches
         .Include(m => m.HomeTeam).ThenInclude(t => t.Players)
         .Include(m => m.AwayTeam).ThenInclude(t => t.Players)
         .Include(m => m.Stats)
@@ -204,16 +205,16 @@ else
             // Combine the date and time into the Match.Kickoff property
             Match.Kickoff = DateTime.Parse($"{KickoffDate:yyyy-MM-dd} {KickoffTime}");
 
-            context.Matches.Update(Match);
-            await context.SaveChangesAsync();
-            NavigationManager.NavigateTo("/matches");
+            await DataService.UpdateAsync(Match);
+
+            Navigation.NavigateTo("/matches");
         }
     }
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/matches");
+        Navigation.NavigateTo("/matches");
     }
 
-    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 }

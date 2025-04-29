@@ -1,11 +1,11 @@
-﻿namespace LocalFantasyLeague.Models
+﻿namespace LocalFantasyLeague.Models.DbSets
 {
-    public class User
+    public class User : IEntity
     {
         public int Id { get; set; }
         public string Username { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;  // We'll hash the password for security
-                                                                 
+
         // Navigation property for the associated Player
         public int? PlayerId { get; set; }  // Foreign key to Player
         public Player? Player { get; set; }

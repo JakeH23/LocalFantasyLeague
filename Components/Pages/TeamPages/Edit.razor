@@ -1,16 +1,15 @@
 ﻿@page "/teams/edit/{Id:int}"
+@using LocalFantasyLeague.Models.DbSets
 @rendermode InteractiveServer
-@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
-@inject NavigationManager Nav
 
 <h3>Edit Team</h3>
 
-@if (Team != null)
+@if (_team != null)
 {
     <div class="row">
         <div class="col-md-6">
-            <EditForm Model="@Team" OnValidSubmit="Update">
-                <InputText class="form-control mb-2" @bind-Value="Team.Name" />
+            <EditForm Model="@_team" OnValidSubmit="Update">
+                <InputText class="form-control mb-2" @bind-Value="_team.Name" />
                 <button class="btn btn-primary">Update</button>
             </EditForm>
         </div>
@@ -19,19 +18,16 @@
 
 @code {
     [Parameter] public int Id { get; set; }
-    private Team? Team;
+    private Team? _team;
 
     protected override async Task OnInitializedAsync()
     {
-        using var db = await DbFactory.CreateDbContextAsync();
-        Team = await db.Teams.FindAsync(Id);
+        _team = await DataService.GetByIdAsync<Team>(Id);
     }
 
     private async Task Update()
     {
-        using var db = await DbFactory.CreateDbContextAsync();
-        db.Update(Team!);
-        await db.SaveChangesAsync();
-        Nav.NavigateTo("/teams");
+        await DataService.UpdateAsync(_team!);
+        Navigation.NavigateTo("/teams");
     }
 }

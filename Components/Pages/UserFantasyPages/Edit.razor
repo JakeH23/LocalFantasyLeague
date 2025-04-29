@@ -1,6 +1,7 @@
 ﻿@page "/user-fantasy/edit/{selectionId:int}"
+@using LocalFantasyLeague.Models.DbSets
+@using LocalFantasyLeague.Models.DbSets
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
-@inject NavigationManager NavigationManager
 
 <h3>Edit Fantasy Selection</h3>
 
@@ -8,7 +9,7 @@
     <label for="playerSelect" class="form-label">Select Players (Max 3 from the same team):</label>
     <select id="playerSelect" class="form-select" @onchange="OnPlayerSelected">
         <option value="">-- Select a Player --</option>
-        @foreach (var player in Players)
+        @foreach (var player in _players)
         {
             <option value="@player.Id">@player.Name (@player.Team.Name)</option>
         }
@@ -18,7 +19,7 @@
 <div class="mt-3">
     <h5>Selected Players:</h5>
     <ul>
-        @foreach (var player in SelectedPlayers)
+        @foreach (var player in _selectedPlayers)
         {
             <li>
                 @player.Name
@@ -30,9 +31,9 @@
 
 <div class="mt-3">
     <label for="captainSelect" class="form-label">Select Captain (Optional):</label>
-    <select id="captainSelect" class="form-select" @bind="CaptainedPlayerId">
+    <select id="captainSelect" class="form-select" @bind="_captainedPlayerId">
         <option value="">-- No Captain --</option>
-        @foreach (var player in SelectedPlayers)
+        @foreach (var player in _selectedPlayers)
         {
             <option value="@player.Id">@player.Name</option>
         }
@@ -44,28 +45,25 @@
 @code {
     [Parameter] public int SelectionId { get; set; }
 
-    private List<Player> Players = new();
-    private List<Player> SelectedPlayers = new();
-    private int? CaptainedPlayerId;
-    private bool CanSave => SelectedPlayers.Count == 3;
+    private List<Player> _players = [];
+    private List<Player> _selectedPlayers = [];
+    private int? _captainedPlayerId;
+    private bool CanSave => _selectedPlayers.Count == 3;
 
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
 
         // Load the existing selection
-        var selection = await context.UserFantasySelections
-            .FirstOrDefaultAsync(s => s.Id == SelectionId);
+        var selection = await DataService.GetByIdAsync<UserFantasySelection>(SelectionId);
 
         if (selection != null)
         {
             // Load the players for the selection
-            SelectedPlayers = await context.Players
-                .Where(p => selection.Players.Contains(p.Id))
-                .ToListAsync();
+            _selectedPlayers = await context.Players.Where(p => selection.Players.Contains(p.Id)).ToListAsync();
 
             // Set the captain
-            CaptainedPlayerId = selection.CaptainedPlayerId;
+            _captainedPlayerId = selection.CaptainedPlayerId;
 
             // Load all players for the match
             var match = await context.Matches
@@ -75,7 +73,7 @@
 
             if (match != null)
             {
-                Players = await context.Players
+                _players = await context.Players
                     .Include(p => p.Team)
                     .Where(p => p.TeamId == match.HomeTeamId || p.TeamId == match.AwayTeamId)
                     .ToListAsync();
@@ -85,39 +83,37 @@
 
     private void OnPlayerSelected(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out var playerId) && SelectedPlayers.Count < 3)
+        if (int.TryParse(e.Value?.ToString(), out var playerId) && _selectedPlayers.Count < 3)
         {
-            var player = Players.FirstOrDefault(p => p.Id == playerId);
-            if (player != null && SelectedPlayers.All(p => p.Id != playerId))
+            var player = _players.FirstOrDefault(p => p.Id == playerId);
+            if (player != null && _selectedPlayers.All(p => p.Id != playerId))
             {
-                SelectedPlayers.Add(player);
+                _selectedPlayers.Add(player);
             }
         }
     }
 
     private void RemovePlayer(int playerId)
     {
-        SelectedPlayers.RemoveAll(p => p.Id == playerId);
-        if (CaptainedPlayerId == playerId)
+        _selectedPlayers.RemoveAll(p => p.Id == playerId);
+        if (_captainedPlayerId == playerId)
         {
-            CaptainedPlayerId = null;
+            _captainedPlayerId = null;
         }
     }
 
     private async Task SaveSelection()
     {
-        await using var context = await DbFactory.CreateDbContextAsync();
-
         // Update the existing selection
-        var selection = await context.UserFantasySelections.FirstOrDefaultAsync(s => s.Id == SelectionId);
+        var selection = await DataService.GetByIdAsync<UserFantasySelection>(SelectionId);
         if (selection != null)
         {
-            selection.Players = SelectedPlayers.Select(p => p.Id).ToList();
-            selection.CaptainedPlayerId = CaptainedPlayerId;
-            await context.SaveChangesAsync();
+            selection.Players = _selectedPlayers.Select(p => p.Id).ToList();
+            selection.CaptainedPlayerId = _captainedPlayerId;
+            await DataService.UpdateAsync(selection);
         }
 
         // Navigate back to the main page
-        NavigationManager.NavigateTo("/user-fantasy");
+        Navigation.NavigateTo("/user-fantasy");
     }
 }

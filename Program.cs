@@ -16,7 +16,8 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddTransient<IBettingService, BettingService>();
+builder.Services.AddTransient<IDataService, DataService>();
+builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddSingleton<UserSession>();
 var app = builder.Build();
 
@@ -37,4 +38,4 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.Run();
+await app.RunAsync();

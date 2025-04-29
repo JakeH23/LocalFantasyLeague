@@ -1,8 +1,8 @@
 ﻿@page "/user-fantasy/create/{matchId:int}"
+@using LocalFantasyLeague.Models.DbSets
+@using LocalFantasyLeague.Models.DbSets
 @rendermode InteractiveServer
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
-@inject NavigationManager NavigationManager
-@inject UserSession UserSession
 
 <div class="container mt-5">
     <div class="card shadow-sm">
@@ -10,7 +10,7 @@
             <h3 class="card-title mb-0">Create Fantasy Selection</h3>
         </div>
         <div class="card-body">
-            <EditForm Model="UserFantasySelection" OnValidSubmit="SaveSelection">
+            <EditForm Model="_userFantasySelection" OnValidSubmit="SaveSelection">
                 <DataAnnotationsValidator />
                 <ValidationSummary class="text-danger mb-3" role="alert" />
 
@@ -21,9 +21,9 @@
 
                             <div class="form-group mb-3">
                                 <label for="player1Select" class="form-label">Player 1</label>
-                                <select id="player1Select" class="form-select" @bind="UserFantasySelection.Players[0]">
+                                <select id="player1Select" class="form-select" @bind="_userFantasySelection.Players[0]">
                                     <option value="">-- Select a Player --</option>
-                                    @foreach (var player in Players)
+                                    @foreach (var player in _players)
                                     {
                                         <option value="@player.Id">@player.Name</option>
                                     }
@@ -33,9 +33,9 @@
                         <div class="col-4">
                             <div class="form-group mb-3">
                                 <label for="player2Select" class="form-label">Player 2</label>
-                                <select id="player2Select" class="form-select" @bind="UserFantasySelection.Players[1]">
+                                <select id="player2Select" class="form-select" @bind="_userFantasySelection.Players[1]">
                                     <option value="">-- Select a Player --</option>
-                                    @foreach (var player in Players)
+                                    @foreach (var player in _players)
                                     {
                                         <option value="@player.Id">@player.Name</option>
                                     }
@@ -46,9 +46,9 @@
 
                             <div class="form-group mb-3">
                                 <label for="player3Select" class="form-label">Player 3</label>
-                                <select id="player3Select" class="form-select" @bind="UserFantasySelection.Players[2]">
+                                <select id="player3Select" class="form-select" @bind="_userFantasySelection.Players[2]">
                                     <option value="">-- Select a Player --</option>
-                                    @foreach (var player in Players)
+                                    @foreach (var player in _players)
                                     {
                                         <option value="@player.Id">@player.Name</option>
                                     }
@@ -66,11 +66,11 @@
                     <h5 class="text-secondary">Select Captain (Optional)</h5>
                     <div class="form-group">
                         <label for="captainSelect" class="form-label">Captain</label>
-                        <select id="captainSelect" class="form-select" @bind="UserFantasySelection.CaptainedPlayerId">
+                        <select id="captainSelect" class="form-select" @bind="_userFantasySelection.CaptainedPlayerId">
                             <option value="">-- No Captain --</option>
-                            @foreach (var playerId in UserFantasySelection.Players)
+                            @foreach (var playerId in _userFantasySelection.Players)
                             {
-                                var player = Players.FirstOrDefault(p => p.Id == playerId);
+                                var player = _players.FirstOrDefault(p => p.Id == playerId);
                                 if (player != null)
                                 {
                                     <option value="@player.Id">@player.Name</option>
@@ -91,37 +91,31 @@
 @code {
     [Parameter] public int MatchId { get; set; }
 
-    private UserFantasySelection UserFantasySelection = new()
-        {
-            MatchId = 0,
-            Players = new List<int> { 0, 0, 0 }, // Initialize with placeholders for 3 players
-            CaptainedPlayerId = null
-        };
+    private readonly UserFantasySelection _userFantasySelection = new() { MatchId = 0, Players = [0, 0, 0], CaptainedPlayerId = null };
 
-    private List<Player> Players = new();
+    private List<Player> _players = [];
 
-    private bool CanSave => UserFantasySelection.Players.Count == 3 &&
-                            UserFantasySelection.Players.All(p => p != 0) &&
-                            UserFantasySelection.Players.Select(p => Players.FirstOrDefault(pl => pl.Id == p)?.TeamId).Distinct().Count() == 1;
+    private bool CanSave => _userFantasySelection.Players.Count == 3 &&
+                            _userFantasySelection.Players.All(p => p != 0) &&
+                            _userFantasySelection.Players.Select(p => _players.FirstOrDefault(pl => pl.Id == p)?.TeamId).Distinct().Count() == 1;
 
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
-        Players = await context.Players
+        _players = await context.Players
             .Include(p => p.Team)
             .Where(p => p.TeamId == context.Matches.FirstOrDefault(m => m.Id == MatchId).HomeTeamId ||
                         p.TeamId == context.Matches.FirstOrDefault(m => m.Id == MatchId).AwayTeamId)
             .ToListAsync();
 
-        UserFantasySelection.MatchId = MatchId;
+        _userFantasySelection.MatchId = MatchId;
     }
 
     private async Task SaveSelection()
     {
-        await using var context = await DbFactory.CreateDbContextAsync();
-        UserFantasySelection.UserId = UserSession.CurrentUser.Id;
-        context.UserFantasySelections.Add(UserFantasySelection);
-        await context.SaveChangesAsync();
-        NavigationManager.NavigateTo("/user-fantasy");
+        _userFantasySelection.UserId = UserSession.CurrentUser?.Id;
+
+        await DataService.AddAsync(_userFantasySelection);
+        Navigation.NavigateTo("/user-fantasy");
     }
 }

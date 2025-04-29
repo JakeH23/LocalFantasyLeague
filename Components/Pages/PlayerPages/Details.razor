@@ -1,7 +1,7 @@
 ﻿@page "/players/details/{id:int}"
+@using LocalFantasyLeague.Models.DbSets
 @rendermode InteractiveServer
-@inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
-@inject NavigationManager NavigationManager
+@inject IDbContextFactory<LocalFantasyLeagueContext> DbContextFactory
 
 <h3 class="text-center my-4">Player Details</h3>
 
@@ -198,7 +198,6 @@ else
     [Parameter]
     public int Id { get; set; }
 
-    private LocalFantasyLeagueContext context = default!;
     private Player? Player { get; set; }
 
     // Pagination state
@@ -213,7 +212,7 @@ else
             .OrderByDescending(s => s.Match?.Kickoff)
             .Skip((CurrentPage - 1) * PageSize)
             .Take(PageSize)
-            ?? Enumerable.Empty<PerformanceStat>();
+            ?? [];
 
     private int TotalAppearances => Player?.PerformanceStats?.Count(s => s.Appearance) ?? 0;
     private int TotalGoals => Player?.PerformanceStats?.Sum(s => s.Goals) ?? 0;
@@ -224,10 +223,13 @@ else
     private int TotalCleanSheets => Player?.PerformanceStats?.Count(s => s.CleanSheet) ?? 0;
     private int TotalPenaltyMissed => Player?.PerformanceStats?.Sum(s => s.PenaltyMissed) ?? 0;
 
+    private LocalFantasyLeagueContext Context { get; set; } = null!;
+
     protected override async Task OnInitializedAsync()
     {
-        context = DbFactory.CreateDbContext();
-        Player = await context.Players
+        Context = await DbContextFactory.CreateDbContextAsync();
+
+        Player = await Context.Players
             .Include(p => p.Team)
             .Include(p => p.PerformanceStats)
                 .ThenInclude(ps => ps.Match)
@@ -256,11 +258,5 @@ else
         }
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        if (context != null)
-        {
-            await context.DisposeAsync();
-        }
-    }
+    public async ValueTask DisposeAsync() => await Context.DisposeAsync();
 }
