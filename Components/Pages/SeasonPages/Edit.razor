@@ -1,0 +1,76 @@
+﻿@page "/seasons/edit/{Id:int}"
+@rendermode InteractiveServer
+
+<h3>Edit Season</h3>
+
+@if (_season is null)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mt-4">
+        <div class="card-body">
+            <EditForm Model="_season" OnValidSubmit="Save">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label for="seasonName" class="form-label">Season Name</label>
+                    <InputText id="seasonName" class="form-control" @bind-Value="_season.Name" />
+                    <ValidationMessage For="@(() => _season.Name)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <InputDate id="startDate" class="form-control" @bind-Value="_season.StartDate" />
+                    <ValidationMessage For="@(() => _season.StartDate)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <InputDate id="endDate" class="form-control" @bind-Value="_season.EndDate" />
+                    <ValidationMessage For="@(() => _season.EndDate)" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">Cancel</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private Season? _season;
+
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _season = await DataService.GetByIdAsync<Season>(Id);
+
+        if (_season == null)
+        {
+            Navigation.NavigateTo("/seasons");
+        }
+    }
+
+    private async Task Save()
+    {
+        if (_season != null)
+        {
+            await DataService.UpdateAsync(_season);
+            Navigation.NavigateTo("/seasons");
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/seasons");
+    }
+}

@@ -27,19 +27,25 @@ SET IDENTITY_INSERT [dbo].[Players] OFF
 
 SET IDENTITY_INSERT [dbo].[Users] ON
 INSERT INTO [dbo].[Users] ([Id], [Username], [PasswordHash], [PlayerId], [TeamId]) VALUES (1, N'JakeH', N'7NcYcNGWMxapfjrDQIyYNa2M8PPBvHA1J8MCZVNPda4=', 1, 1)
-INSERT INTO [dbo].[Users] ([Id], [Username], [PasswordHash], [PlayerId], [TeamId]) VALUES (2, N'MattT', N'7NcYcNGWMxapfjrDQIyYNa2M8PPBvHA1J8MCZVNPda4=', 1, 8)
+INSERT INTO [dbo].[Users] ([Id], [Username], [PasswordHash], [PlayerId], [TeamId]) VALUES (2, N'MattT', N'7NcYcNGWMxapfjrDQIyYNa2M8PPBvHA1J8MCZVNPda4=', 8, 1)
 SET IDENTITY_INSERT [dbo].[Users] OFF
 
+SET IDENTITY_INSERT [dbo].[Seasons] ON
+INSERT INTO [dbo].[Seasons] ([Id], [Name], [StartDate], [EndDate]) VALUES (1, N'Season 1', N'2025-03-13 00:00:00', N'2025-06-21 00:00:00')
+INSERT INTO [dbo].[Seasons] ([Id], [Name], [StartDate], [EndDate]) VALUES (2, N'Season 2', N'2025-06-21 00:00:00', N'2025-10-01 00:00:00')
+SET IDENTITY_INSERT [dbo].[Seasons] OFF
+
+
 SET IDENTITY_INSERT [dbo].[Matches] ON
-INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (2, N'2025-03-13 20:30:00', 4, 1, 0, 5)
-INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (3, N'2025-03-20 19:00:00', 6, 1, 1, 5)
-INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (4, N'2025-03-27 20:30:00', 1, 2, 0, 5)
-INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (5, N'2025-04-03 19:30:00', 5, 1, 1, 0)
-INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (6, N'2025-04-10 20:00:00', 1, 3, 2, 3)
-INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (7, N'2025-04-17 20:00:00', 8, 1, 0, 5)
-INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (8, N'2025-04-24 19:00:00', 1, 7, 3, 0)
-INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (9, N'2025-05-01 20:30:00', 1, 4, 0, 0)
-INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals]) VALUES (10, N'2025-04-24 19:30:00', 1, 6, 1, 0)
+INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals], [SeasonId]) VALUES (2, N'2025-03-13 20:30:00', 4, 1, 0, 5, 1)
+INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals], [SeasonId]) VALUES (3, N'2025-03-20 19:00:00', 6, 1, 1, 5, 1)
+INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals], [SeasonId]) VALUES (4, N'2025-03-27 20:30:00', 1, 2, 0, 5, 1)
+INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals], [SeasonId]) VALUES (5, N'2025-04-03 19:30:00', 5, 1, 1, 0, 1)
+INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals], [SeasonId]) VALUES (6, N'2025-04-10 20:00:00', 1, 3, 2, 3, 1)
+INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals], [SeasonId]) VALUES (7, N'2025-04-17 20:00:00', 8, 1, 0, 5, 1)
+INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals], [SeasonId]) VALUES (8, N'2025-04-24 19:00:00', 1, 7, 3, 0, 1)
+INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals], [SeasonId]) VALUES (9, N'2025-05-01 20:30:00', 1, 4, 0, 0, 1)
+INSERT INTO [dbo].[Matches] ([Id], [Kickoff], [HomeTeamId], [AwayTeamId], [HomeTeamGoals], [AwayTeamGoals], [SeasonId]) VALUES (10, N'2025-04-24 19:30:00', 1, 6, 1, 0, 1)
 SET IDENTITY_INSERT [dbo].[Matches] OFF
 
 SET IDENTITY_INSERT [dbo].[PerformanceStats] ON
@@ -150,12 +156,12 @@ INSERT INTO [dbo].[PerformanceStats] ([Id], [MatchId], [PlayerId], [Appearance],
 SET IDENTITY_INSERT [dbo].[PerformanceStats] OFF
 
 SET IDENTITY_INSERT [dbo].[UserFantasySelections] ON
-INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (1, 2, 1, N'[1,3,4]', 1, 0)
-INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (2, 3, 1, N'[5,9,1]', NULL, 0)
-INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (3, 4, 1, N'[2,5,3]', NULL, 0)
-INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (4, 5, 1, N'[1,3,6]', NULL, 0)
-INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (5, 6, 1, N'[7,1,3]', NULL, 0)
-INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (6, 7, 1, N'[1,5,3]', NULL, 0)
-INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (7, 8, 1, N'[5,6,9]', NULL, 0)
-INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId], [IsProcessed]) VALUES (9, 2, 3, N'[1,4,3]', 3, 0)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId]) VALUES (1, 2, 1, N'[1,3,4]', 1)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId]) VALUES (2, 3, 1, N'[5,9,1]', NULL)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId]) VALUES (3, 4, 1, N'[2,5,3]', NULL)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId]) VALUES (4, 5, 1, N'[1,3,6]', NULL)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId]) VALUES (5, 6, 1, N'[7,1,3]', NULL)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId]) VALUES (6, 7, 1, N'[1,5,3]', NULL)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId]) VALUES (7, 8, 1, N'[5,6,9]', NULL)
+INSERT INTO [dbo].[UserFantasySelections] ([Id], [MatchId], [UserId], [Players], [CaptainedPlayerId]) VALUES (9, 2, 3, N'[1,4,3]', 3)
 SET IDENTITY_INSERT [dbo].[UserFantasySelections] OFF

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LocalFantasyLeague.Migrations
 {
     [DbContext(typeof(LocalFantasyLeagueContext))]
-    [Migration("20250428103113_Init")]
-    partial class Init
+    [Migration("20250429151440_InitMigration")]
+    partial class InitMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,39 +25,7 @@ namespace LocalFantasyLeague.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.Bet", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18, 2)");
-
-                    b.Property<bool>("IsResolved")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal?>("Payout")
-                        .HasColumnType("decimal(18, 2)");
-
-                    b.Property<int>("PlayerId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Bets");
-                });
-
-            modelBuilder.Entity("LocalFantasyLeague.Models.Match", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.Match", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -80,16 +48,21 @@ namespace LocalFantasyLeague.Migrations
                     b.Property<DateTime>("Kickoff")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("SeasonId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AwayTeamId");
 
                     b.HasIndex("HomeTeamId");
 
+                    b.HasIndex("SeasonId");
+
                     b.ToTable("Matches");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.PerformanceStat", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.PerformanceStat", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -136,7 +109,7 @@ namespace LocalFantasyLeague.Migrations
                     b.ToTable("PerformanceStats");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.Player", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.Player", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -162,7 +135,31 @@ namespace LocalFantasyLeague.Migrations
                     b.ToTable("Players");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.Team", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.Season", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Seasons");
+                });
+
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.Team", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -179,7 +176,7 @@ namespace LocalFantasyLeague.Migrations
                     b.ToTable("Teams");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.User", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -207,14 +204,12 @@ namespace LocalFantasyLeague.Migrations
                         .IsUnique()
                         .HasFilter("[PlayerId] IS NOT NULL");
 
-                    b.HasIndex("TeamId")
-                        .IsUnique()
-                        .HasFilter("[TeamId] IS NOT NULL");
+                    b.HasIndex("TeamId");
 
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.UserFantasySelection", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.UserFantasySelection", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -224,9 +219,6 @@ namespace LocalFantasyLeague.Migrations
 
                     b.Property<int?>("CaptainedPlayerId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("IsProcessed")
-                        .HasColumnType("bit");
 
                     b.Property<int>("MatchId")
                         .HasColumnType("int");
@@ -243,34 +235,42 @@ namespace LocalFantasyLeague.Migrations
                     b.ToTable("UserFantasySelections");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.Match", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.Match", b =>
                 {
-                    b.HasOne("LocalFantasyLeague.Models.Team", "AwayTeam")
+                    b.HasOne("LocalFantasyLeague.Models.DbSets.Team", "AwayTeam")
                         .WithMany()
                         .HasForeignKey("AwayTeamId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("LocalFantasyLeague.Models.Team", "HomeTeam")
+                    b.HasOne("LocalFantasyLeague.Models.DbSets.Team", "HomeTeam")
                         .WithMany()
                         .HasForeignKey("HomeTeamId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("LocalFantasyLeague.Models.DbSets.Season", "Season")
+                        .WithMany()
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("AwayTeam");
 
                     b.Navigation("HomeTeam");
+
+                    b.Navigation("Season");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.PerformanceStat", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.PerformanceStat", b =>
                 {
-                    b.HasOne("LocalFantasyLeague.Models.Match", "Match")
+                    b.HasOne("LocalFantasyLeague.Models.DbSets.Match", "Match")
                         .WithMany("Stats")
                         .HasForeignKey("MatchId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LocalFantasyLeague.Models.Player", "Player")
+                    b.HasOne("LocalFantasyLeague.Models.DbSets.Player", "Player")
                         .WithMany("PerformanceStats")
                         .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -281,43 +281,45 @@ namespace LocalFantasyLeague.Migrations
                     b.Navigation("Player");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.Player", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.Player", b =>
                 {
-                    b.HasOne("LocalFantasyLeague.Models.Team", "Team")
+                    b.HasOne("LocalFantasyLeague.Models.DbSets.Team", "Team")
                         .WithMany("Players")
                         .HasForeignKey("TeamId");
 
                     b.Navigation("Team");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.User", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.User", b =>
                 {
-                    b.HasOne("LocalFantasyLeague.Models.Player", "Player")
+                    b.HasOne("LocalFantasyLeague.Models.DbSets.Player", "Player")
                         .WithOne()
-                        .HasForeignKey("LocalFantasyLeague.Models.User", "PlayerId");
+                        .HasForeignKey("LocalFantasyLeague.Models.DbSets.User", "PlayerId");
 
-                    b.HasOne("LocalFantasyLeague.Models.Team", "Team")
-                        .WithOne()
-                        .HasForeignKey("LocalFantasyLeague.Models.User", "TeamId");
+                    b.HasOne("LocalFantasyLeague.Models.DbSets.Team", "Team")
+                        .WithMany("Users")
+                        .HasForeignKey("TeamId");
 
                     b.Navigation("Player");
 
                     b.Navigation("Team");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.Match", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.Match", b =>
                 {
                     b.Navigation("Stats");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.Player", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.Player", b =>
                 {
                     b.Navigation("PerformanceStats");
                 });
 
-            modelBuilder.Entity("LocalFantasyLeague.Models.Team", b =>
+            modelBuilder.Entity("LocalFantasyLeague.Models.DbSets.Team", b =>
                 {
                     b.Navigation("Players");
+
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

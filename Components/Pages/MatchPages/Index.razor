@@ -1,5 +1,4 @@
 ﻿@page "/matches"
-@using LocalFantasyLeague.Models.DbSets
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
 
 <h3 class="text-center my-4 text-primary">All Matches</h3>
@@ -7,6 +6,20 @@
 {
     <a href="/matches/create" class="btn btn-outline-primary mb-3">Add Match</a>
 }
+
+<!-- Season Filter -->
+<div class="mb-3">
+    <label for="seasonFilter" class="form-label">Filter by Season:</label>
+    <select id="seasonFilter" class="form-select" @onchange="FilterMatchesBySeason">
+        <option value="">All Seasons</option>
+        @foreach (var season in _seasons)
+        {
+            <option value="@season.Id">@season.Name (@season.StartDate:MMM yyyy - @season.EndDate:MMM yyyy)</option>
+        }
+    </select>
+</div>
+
+<!-- Team Filter -->
 <div class="mb-3">
     <label for="teamFilter" class="form-label">Filter by Team:</label>
     <select id="teamFilter" class="form-select" @onchange="FilterMatchesByTeam">
@@ -68,7 +81,9 @@
     private List<Match> _matches = [];
     private List<Match> _filteredMatches = [];
     private List<Team> _teams = [];
+    private List<Season> _seasons = [];
     private int? _selectedTeamId;
+    private int? _selectedSeasonId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -77,10 +92,12 @@
         _matches = await context.Matches
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)
+            .Include(m => m.Season)
             .OrderBy(m => m.Kickoff)
             .ToListAsync();
-        
+
         _teams = await DataService.GetAllAsync<Team>();
+        _seasons = await DataService.GetAllAsync<Season>();
         _filteredMatches = _matches; // Initially show all matches
     }
 
@@ -89,12 +106,45 @@
         if (int.TryParse(e.Value?.ToString(), out var teamId))
         {
             _selectedTeamId = teamId;
-            _filteredMatches = _matches.Where(p => p.HomeTeamId == teamId || p.AwayTeamId == teamId).ToList();
         }
         else
         {
             _selectedTeamId = null;
-            _filteredMatches = _matches; // Show all matches if no team is selected
+        }
+
+        ApplyFilters();
+    }
+
+    private void FilterMatchesBySeason(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var seasonId))
+        {
+            _selectedSeasonId = seasonId;
+        }
+        else
+        {
+            _selectedSeasonId = null;
+        }
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredMatches = _matches;
+
+        if (_selectedTeamId.HasValue)
+        {
+            _filteredMatches = _filteredMatches
+                .Where(m => m.HomeTeamId == _selectedTeamId || m.AwayTeamId == _selectedTeamId)
+                .ToList();
+        }
+
+        if (_selectedSeasonId.HasValue)
+        {
+            _filteredMatches = _filteredMatches
+                .Where(m => m.SeasonId == _selectedSeasonId)
+                .ToList();
         }
 
         StateHasChanged();

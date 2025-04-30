@@ -1,8 +1,21 @@
 ﻿@page "/league-table"
-@using LocalFantasyLeague.Models.DbSets
+@rendermode InteractiveServer
 
 <div class="container my-5">
     <h3 class="text-center my-4 text-primary">Fantasy League Table</h3>
+
+    <!-- Season Filter -->
+    <div class="mb-4">
+        <label for="seasonFilter" class="form-label">Filter by Season:</label>
+        <select id="seasonFilter" class="form-select" @onchange="FilterBySeason">
+            <option value="">-- All Seasons --</option>
+            @foreach (var season in _seasons)
+            {
+                <option value="@season.Id">@season.Name (@season.StartDate:MMM yyyy - @season.EndDate:MMM yyyy)</option>
+            }
+        </select>
+    </div>
+
     <div class="table-responsive shadow rounded">
         <table class="table table-striped table-hover table-bordered align-middle">
             <thead class="bg-primary text-white">
@@ -56,14 +69,43 @@
 
 @code {
     private List<LeagueEntry> _leagueEntries = [];
+    private List<Season> _seasons = [];
+    private int? _selectedSeasonId;
 
     protected override async Task OnInitializedAsync()
+    {
+        // Load all seasons
+        _seasons = await DataService.GetAllAsync<Season>();
+
+        // Load league data
+        await LoadLeagueData();
+    }
+
+    private async Task LoadLeagueData()
     {
         // Load all users
         var users = await DataService.GetAllAsync<User>();
 
         // Load all fantasy selections
         var allSelections = await DataService.GetAllAsync<UserFantasySelection>();
+
+        // Filter selections by season if a season is selected
+        if (_selectedSeasonId.HasValue)
+        {
+            var season = _seasons.FirstOrDefault(s => s.Id == _selectedSeasonId.Value);
+            if (season != null)
+            {
+                var matchesInSeason = await DataService.GetAllAsync<Match>();
+                var seasonMatchIds = matchesInSeason
+                    .Where(m => m.SeasonId == season.Id)
+                    .Select(m => m.Id)
+                    .ToList();
+
+                allSelections = allSelections
+                    .Where(s => seasonMatchIds.Contains(s.MatchId))
+                    .ToList();
+            }
+        }
 
         // Load performance stats
         var allMatchIds = allSelections.Select(s => s.MatchId).Distinct().ToList();
@@ -101,5 +143,20 @@
         .ToList();
 
         StateHasChanged();
+    }
+
+
+    private async Task FilterBySeason(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var seasonId))
+        {
+            _selectedSeasonId = seasonId;
+        }
+        else
+        {
+            _selectedSeasonId = null;
+        }
+
+        await LoadLeagueData();
     }
 }

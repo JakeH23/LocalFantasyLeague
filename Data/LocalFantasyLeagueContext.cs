@@ -11,6 +11,7 @@ namespace LocalFantasyLeague.Data
         public DbSet<PerformanceStat> PerformanceStats { get; set; } = default!;
         public DbSet<User> Users { get; set; } = default!;
         public DbSet<UserFantasySelection> UserFantasySelections { get; set; } = default!;
+        public DbSet<Season> Seasons { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,0 +1,50 @@
+﻿@page "/seasons/create"
+@rendermode InteractiveServer
+
+<h3>Create New Season</h3>
+
+<div class="card shadow-sm mt-4">
+    <div class="card-body">
+        <EditForm Model="_newSeason" OnValidSubmit="Save">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label for="seasonName" class="form-label">Season Name</label>
+                <InputText id="seasonName" class="form-control" @bind-Value="_newSeason.Name" />
+                <ValidationMessage For="@(() => _newSeason.Name)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="startDate" class="form-label">Start Date</label>
+                <InputDate id="startDate" class="form-control" @bind-Value="_newSeason.StartDate" />
+                <ValidationMessage For="@(() => _newSeason.StartDate)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="endDate" class="form-label">End Date</label>
+                <InputDate id="endDate" class="form-control" @bind-Value="_newSeason.EndDate" />
+                <ValidationMessage For="@(() => _newSeason.EndDate)" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create Season</button>
+            <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">Cancel</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private readonly Season _newSeason = new();
+
+    private async Task Save()
+    {
+        // Add the team to the database and save changes
+        await DataService.AddAsync(_newSeason);
+        Navigation.NavigateTo("/seasons");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/seasons");
+    }
+}

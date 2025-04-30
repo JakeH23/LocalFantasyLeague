@@ -6,27 +6,24 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LocalFantasyLeague.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class InitMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Bets",
+                name: "Seasons",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Type = table.Column<int>(type: "int", nullable: false),
-                    PlayerId = table.Column<int>(type: "int", nullable: false),
-                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    IsResolved = table.Column<bool>(type: "bit", nullable: false),
-                    Payout = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Bets", x => x.Id);
+                    table.PrimaryKey("PK_Seasons", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -51,8 +48,7 @@ namespace LocalFantasyLeague.Migrations
                     MatchId = table.Column<int>(type: "int", nullable: false),
                     UserId = table.Column<int>(type: "int", nullable: true),
                     Players = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CaptainedPlayerId = table.Column<int>(type: "int", nullable: true),
-                    IsProcessed = table.Column<bool>(type: "bit", nullable: false)
+                    CaptainedPlayerId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -69,11 +65,18 @@ namespace LocalFantasyLeague.Migrations
                     HomeTeamId = table.Column<int>(type: "int", nullable: false),
                     AwayTeamId = table.Column<int>(type: "int", nullable: false),
                     HomeTeamGoals = table.Column<int>(type: "int", nullable: false),
-                    AwayTeamGoals = table.Column<int>(type: "int", nullable: false)
+                    AwayTeamGoals = table.Column<int>(type: "int", nullable: false),
+                    SeasonId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Matches", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Matches_Seasons_SeasonId",
+                        column: x => x.SeasonId,
+                        principalTable: "Seasons",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Matches_Teams_AwayTeamId",
                         column: x => x.AwayTeamId,
@@ -179,6 +182,11 @@ namespace LocalFantasyLeague.Migrations
                 column: "HomeTeamId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Matches_SeasonId",
+                table: "Matches",
+                column: "SeasonId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PerformanceStats_MatchId",
                 table: "PerformanceStats",
                 column: "MatchId");
@@ -203,17 +211,12 @@ namespace LocalFantasyLeague.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Users_TeamId",
                 table: "Users",
-                column: "TeamId",
-                unique: true,
-                filter: "[TeamId] IS NOT NULL");
+                column: "TeamId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Bets");
-
             migrationBuilder.DropTable(
                 name: "PerformanceStats");
 
@@ -228,6 +231,9 @@ namespace LocalFantasyLeague.Migrations
 
             migrationBuilder.DropTable(
                 name: "Players");
+
+            migrationBuilder.DropTable(
+                name: "Seasons");
 
             migrationBuilder.DropTable(
                 name: "Teams");

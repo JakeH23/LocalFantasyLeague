@@ -11,5 +11,7 @@
         public int HomeTeamGoals { get; set; }
         public int AwayTeamGoals { get; set; }
         public List<PerformanceStat> Stats { get; set; } = [];
+        public int SeasonId { get; set; }
+        public Season? Season { get; set; }
     }
 }

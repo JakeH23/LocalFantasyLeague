@@ -1,5 +1,4 @@
 ﻿@page "/matches/create"
-@using LocalFantasyLeague.Models.DbSets
 @rendermode InteractiveServer
 
 <h3>Create Match</h3>
@@ -68,8 +67,29 @@
         // Combine the selected date and time into the Match.Kickoff property
         _match.Kickoff = DateTime.Parse($"{_selectedDate:yyyy-MM-dd} {_selectedTime}");
 
+        // Fetch all seasons
+        var seasons = await DataService.GetAllAsync<Season>();
+
+        // Find the season that matches the kickoff date
+        var matchingSeason = seasons.FirstOrDefault(season =>
+            _match.Kickoff >= season.StartDate && _match.Kickoff <= season.EndDate);
+
+        if (matchingSeason != null)
+        {
+            _match.SeasonId = matchingSeason.Id;
+        }
+        else
+        {
+            // Handle the case where no matching season is found
+            // For example, show an error message or set a default value
+            throw new InvalidOperationException("No matching season found for the selected match date. Please ensure season is created.");
+        }
+
+        // Save the match to the database
         await DataService.AddAsync(_match);
 
+        // Navigate back to the matches list
         Navigation.NavigateTo("/matches");
     }
+
 }

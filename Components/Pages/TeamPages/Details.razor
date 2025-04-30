@@ -1,6 +1,4 @@
 ﻿@page "/teams/details/{id:int}"
-@using LocalFantasyLeague.Models.DbSets
-@using LocalFantasyLeague.Models.DbSets
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbContextFactory
 
 <h3 class="text-center my-4">Team Details</h3>
@@ -44,6 +42,7 @@ else
                                 <thead class="table-dark">
                                     <tr>
                                         <th>Player</th>
+                                        <th>Season</th>
                                         <th>Appearances</th>
                                         <th>Goals</th>
                                         <th>Assists</th>
@@ -57,12 +56,39 @@ else
                                 <tbody>
                                     @foreach (var player in Team.Players)
                                     {
-                                        <tr>
+                                        var statsBySeason = player.PerformanceStats
+                                        .Where(s => s.Match?.Season != null)
+                                        .GroupBy(s => s.Match!.Season!)
+                                        .OrderBy(g => g.Key.StartDate);
+
+                                        foreach (var seasonGroup in statsBySeason)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <a class="text-decoration-none" href="/players/details/@player.Id">
+                                                        @player.Name
+                                                    </a>
+                                                </td>
+                                                <td>@seasonGroup.Key.Name (@seasonGroup.Key.StartDate:yyyy - @seasonGroup.Key.EndDate:yyyy)</td>
+                                                <td class="numeric-column">@seasonGroup.Count(s => s.Appearance)</td>
+                                                <td class="numeric-column">@seasonGroup.Sum(s => s.Goals)</td>
+                                                <td class="numeric-column">@seasonGroup.Sum(s => s.Assists)</td>
+                                                <td class="numeric-column">@seasonGroup.Count(s => s.YellowCard)</td>
+                                                <td class="numeric-column">@seasonGroup.Count(s => s.RedCard)</td>
+                                                <td class="numeric-column">@seasonGroup.Sum(s => s.PenaltySaves)</td>
+                                                <td class="numeric-column">@seasonGroup.Count(s => s.CleanSheet)</td>
+                                                <td class="numeric-column">@seasonGroup.Sum(s => s.PenaltyMissed)</td>
+                                            </tr>
+                                        }
+
+                                        <!-- All-Time Stats Row -->
+                                        <tr class="table-secondary">
                                             <td>
                                                 <a class="text-decoration-none" href="/players/details/@player.Id">
                                                     @player.Name
                                                 </a>
                                             </td>
+                                            <td><strong>All Time</strong></td>
                                             <td class="numeric-column">@player.PerformanceStats.Count(s => s.Appearance)</td>
                                             <td class="numeric-column">@player.PerformanceStats.Sum(s => s.Goals)</td>
                                             <td class="numeric-column">@player.PerformanceStats.Sum(s => s.Assists)</td>
@@ -85,6 +111,7 @@ else
             </div>
         </div>
 
+
         <!-- Match Results -->
         <div class="card">
             <div class="card-header bg-warning text-dark">
@@ -102,53 +129,79 @@ else
                             <table class="table table-striped table-hover table-bordered">
                                 <thead class="table-dark">
                                     <tr>
+                                        <th>Season</th>
                                         <th>Date</th>
                                         <th>Opponent</th>
                                         <th class="highlight-column">Result</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var match in _matches)
+                                    @foreach (var seasonGroup in _matches
+                                   .Where(m => m.Season != null)
+                                   .GroupBy(m => m.Season!)
+                                   .OrderBy(g => g.Key.StartDate))
                                     {
-                                        var isHomeTeam = match.HomeTeamId == Team.Id;
-                                        var teamScore = isHomeTeam ? match.HomeTeamGoals : match.AwayTeamGoals;
-                                        var opponentScore = isHomeTeam ? match.AwayTeamGoals : match.HomeTeamGoals;
-                                        var opponentName = isHomeTeam ? match.AwayTeam?.Name : match.HomeTeam?.Name;
-                                        var resultClass = match.Kickoff > DateTime.Now
-                                        ? "text-muted"
-                                        : teamScore > opponentScore
-                                        ? "text-success"
-                                        : teamScore < opponentScore
-                                        ? "text-danger"
-                                        : "";
-
-                                        <tr>
-                                            <td>
-                                                <a class="text-decoration-none" href="/matches/details/@match.Id">
-                                                    @match.Kickoff.ToString("MMM dd, yyyy")
-                                                </a>
-                                            </td>
-                                            <td>@opponentName</td>
-                                            <td class="@resultClass highlight-column">
-                                                @if (match.Kickoff > DateTime.Now)
-                                                {
-                                                    <span>TBD</span>
-                                                }
-                                                else if (teamScore > opponentScore)
-                                                {
-                                                    <span>Win (@teamScore - @opponentScore)</span>
-                                                }
-                                                else if (teamScore < opponentScore)
-                                                {
-                                                    <span>Loss (@teamScore - @opponentScore)</span>
-                                                }
-                                                else
-                                                {
-                                                    <span>Draw (@teamScore - @opponentScore)</span>
-                                                }
-                                            </td>
+                                        <tr class="table-secondary">
+                                            <td colspan="4"><strong>@seasonGroup.Key.Name (@seasonGroup.Key.StartDate:yyyy - @seasonGroup.Key.EndDate:yyyy)</strong></td>
                                         </tr>
+
+                                        @foreach (var match in seasonGroup)
+                                        {
+                                            var isHomeTeam = match.HomeTeamId == Team.Id;
+                                            var teamScore = isHomeTeam ? match.HomeTeamGoals : match.AwayTeamGoals;
+                                            var opponentScore = isHomeTeam ? match.AwayTeamGoals : match.HomeTeamGoals;
+                                            var opponentName = isHomeTeam ? match.AwayTeam?.Name : match.HomeTeam?.Name;
+                                            var resultClass = match.Kickoff > DateTime.Now
+                                            ? "text-muted"
+                                            : teamScore > opponentScore
+                                            ? "text-success"
+                                            : teamScore < opponentScore
+                                            ? "text-danger"
+                                            : "";
+
+                                            <tr>
+                                                <td></td>
+                                                <td>
+                                                    <a class="text-decoration-none" href="/matches/details/@match.Id">
+                                                        @match.Kickoff.ToString("MMM dd, yyyy")
+                                                    </a>
+                                                </td>
+                                                <td>@opponentName</td>
+                                                <td class="@resultClass highlight-column">
+                                                    @if (match.Kickoff > DateTime.Now)
+                                                    {
+                                                        <span>TBD</span>
+                                                    }
+                                                    else if (teamScore > opponentScore)
+                                                    {
+                                                        <span>Win (@teamScore - @opponentScore)</span>
+                                                    }
+                                                    else if (teamScore < opponentScore)
+                                                    {
+                                                        <span>Loss (@teamScore - @opponentScore)</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Draw (@teamScore - @opponentScore)</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
                                     }
+
+                                    <!-- All-Time Stats Row -->
+                                    <tr class="table-secondary">
+                                        <td colspan="4"><strong>All Time</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td colspan="3">
+                                            <strong>Total Matches:</strong> @_matches.Count<br />
+                                            <strong>Wins:</strong> @_matches.Count(m => (m.HomeTeamId == Team.Id && m.HomeTeamGoals > m.AwayTeamGoals) || (m.AwayTeamId == Team.Id && m.AwayTeamGoals > m.HomeTeamGoals))<br />
+                                            <strong>Losses:</strong> @_matches.Count(m => (m.HomeTeamId == Team.Id && m.HomeTeamGoals < m.AwayTeamGoals) || (m.AwayTeamId == Team.Id && m.AwayTeamGoals < m.HomeTeamGoals))<br />
+                                            <strong>Draws:</strong> @_matches.Count(m => m.HomeTeamGoals == m.AwayTeamGoals)
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
