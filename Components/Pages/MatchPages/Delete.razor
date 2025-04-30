@@ -5,17 +5,32 @@
 
 @if (Match == null)
 {
-    <p><em>Loading...</em></p>
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
 }
 else
 {
-    <p>Are you sure you want to delete this match?</p>
-    <p><strong>@Match.HomeTeam?.Name</strong> vs <strong>@Match.AwayTeam?.Name</strong> on <strong>@Match.Kickoff.ToString("g")</strong></p>
+    <div class="card shadow-sm mt-4">
+        <div class="card-body">
+            <h5>Are you sure you want to delete the following match?</h5>
+            <dl class="row">
+                <dt class="col-sm-3">Home Team</dt>
+                <dd class="col-sm-9">@Match.HomeTeam?.Name</dd>
 
-    <EditForm method="post" Model="Match" OnValidSubmit="DeleteMatch" FormName="delete" Enhance>
-        <button type="submit" class="btn btn-danger" disabled="@(Match is null)">Delete</button> |
-        <a href="/matches">Back to List</a>
-    </EditForm>
+                <dt class="col-sm-3">Away Team</dt>
+                <dd class="col-sm-9">@Match.AwayTeam?.Name</dd>
+
+                <dt class="col-sm-3">Kickoff</dt>
+                <dd class="col-sm-9">@Match.Kickoff.ToString("MMM dd, yyyy hh:mm tt")</dd>
+            </dl>
+
+            <button class="btn btn-danger" @onclick="DeleteMatch">Delete</button>
+            <button class="btn btn-secondary ms-2" @onclick="Cancel">Cancel</button>
+        </div>
+    </div>
 }
 
 @code {
@@ -30,6 +45,11 @@ else
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)
             .FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Match == null)
+        {
+            Navigation.NavigateTo("/matches");
+        }
     }
 
     private async Task DeleteMatch()
@@ -41,5 +61,9 @@ else
 
         Navigation.NavigateTo("/matches");
     }
-}
 
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/matches");
+    }
+}

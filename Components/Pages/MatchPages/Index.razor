@@ -1,4 +1,5 @@
 ﻿@page "/matches"
+@rendermode InteractiveServer
 @inject IDbContextFactory<LocalFantasyLeagueContext> DbFactory
 
 <h3 class="text-center my-4 text-primary">All Matches</h3>
@@ -7,28 +8,34 @@
     <a href="/matches/create" class="btn btn-outline-primary mb-3">Add Match</a>
 }
 
-<!-- Season Filter -->
-<div class="mb-3">
-    <label for="seasonFilter" class="form-label">Filter by Season:</label>
-    <select id="seasonFilter" class="form-select" @onchange="FilterMatchesBySeason">
-        <option value="">All Seasons</option>
-        @foreach (var season in _seasons)
-        {
-            <option value="@season.Id">@season.Name (@season.StartDate:MMM yyyy - @season.EndDate:MMM yyyy)</option>
-        }
-    </select>
-</div>
+<div class="row">
+    <div class="col-3">
+        <!-- Season Filter -->
 
-<!-- Team Filter -->
-<div class="mb-3">
-    <label for="teamFilter" class="form-label">Filter by Team:</label>
-    <select id="teamFilter" class="form-select" @onchange="FilterMatchesByTeam">
-        <option value="">All Teams</option>
-        @foreach (var team in _teams)
-        {
-            <option value="@team.Id">@team.Name</option>
-        }
-    </select>
+        <div class="mb-3">
+            <label for="seasonFilter" class="form-label">Filter by Season:</label>
+            <select id="seasonFilter" class="form-select" @bind="SelectedSeasonId">
+                <option value="">All Seasons</option>
+                @foreach (var season in _seasons)
+                {
+                    <option value="@season.Id">@season.Name (@season.StartDate.ToString("MMM dd, yyyy") - @season.EndDate.ToString("MMM dd, yyyy"))</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="col-3">
+        <!-- Team Filter -->
+        <div class="mb-3">
+            <label for="teamFilter" class="form-label">Filter by Team:</label>
+            <select id="teamFilter" class="form-select" @bind="SelectedTeamId">
+                <option value="">All Teams</option>
+                @foreach (var team in _teams)
+                {
+                    <option value="@team.Id">@team.Name</option>
+                }
+            </select>
+        </div>
+    </div>
 </div>
 
 <div class="table-responsive">
@@ -43,7 +50,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var match in _filteredMatches)
+            @foreach (var match in PaginatedMatches)
             {
                 <tr>
                     <td>@match.Kickoff.ToString("MMM dd, yyyy")</td>
@@ -76,14 +83,62 @@
         </tbody>
     </table>
 </div>
+<div class="d-flex justify-content-center mt-3">
+    <nav>
+        <ul class="pagination">
+            <li class="page-item @(IsFirstPage ? "disabled" : "")">
+                <button class="page-link" @onclick="PreviousPage" disabled="@IsFirstPage">
+                    <i class="bi bi-arrow-left"></i> Previous
+                </button>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link">Page @_currentPage of @TotalPages</span>
+            </li>
+            <li class="page-item @(IsLastPage ? "disabled" : "")">
+                <button class="page-link" @onclick="NextPage" disabled="@IsLastPage">
+                    Next <i class="bi bi-arrow-right"></i>
+                </button>
+            </li>
+        </ul>
+    </nav>
+</div>
 
 @code {
     private List<Match> _matches = [];
     private List<Match> _filteredMatches = [];
+    private List<Match> PaginatedMatches => _filteredMatches
+        .Skip((_currentPage - 1) * PageSize)
+        .Take(PageSize)
+        .ToList();
+
     private List<Team> _teams = [];
     private List<Season> _seasons = [];
-    private int? _selectedTeamId;
-    private int? _selectedSeasonId;
+    private int? SelectedSeasonId
+    {
+        get => _selectedSeasonIdBackingField;
+        set
+        {
+            _selectedSeasonIdBackingField = value;
+            ApplyFilters();
+        }
+    }
+    private int? SelectedTeamId
+    {
+        get => _selectedTeamIdBackingField;
+        set
+        {
+            _selectedTeamIdBackingField = value;
+            ApplyFilters();
+        }
+    }
+
+    private int? _selectedSeasonIdBackingField;
+    private int? _selectedTeamIdBackingField;
+    private int _currentPage = 1;
+    private const int PageSize = 10;
+    private int TotalPages => (int)Math.Ceiling((double)_filteredMatches.Count / PageSize);
+    private bool IsFirstPage => _currentPage == 1;
+    private bool IsLastPage => _currentPage >= TotalPages;
 
     protected override async Task OnInitializedAsync()
     {
@@ -93,38 +148,16 @@
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)
             .Include(m => m.Season)
-            .OrderBy(m => m.Kickoff)
+            .OrderByDescending(m => m.Kickoff)
             .ToListAsync();
 
         _teams = await DataService.GetAllAsync<Team>();
         _seasons = await DataService.GetAllAsync<Season>();
-        _filteredMatches = _matches; // Initially show all matches
-    }
 
-    private void FilterMatchesByTeam(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var teamId))
-        {
-            _selectedTeamId = teamId;
-        }
-        else
-        {
-            _selectedTeamId = null;
-        }
+        SelectedTeamId = UserSession.CurrentUser?.TeamId ?? null;
 
-        ApplyFilters();
-    }
-
-    private void FilterMatchesBySeason(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var seasonId))
-        {
-            _selectedSeasonId = seasonId;
-        }
-        else
-        {
-            _selectedSeasonId = null;
-        }
+        var today = DateTime.Now;
+        SelectedSeasonId = _seasons.FirstOrDefault(season => today >= season.StartDate && today <= season.EndDate)?.Id;
 
         ApplyFilters();
     }
@@ -133,20 +166,37 @@
     {
         _filteredMatches = _matches;
 
-        if (_selectedTeamId.HasValue)
+        if (SelectedTeamId.HasValue)
         {
             _filteredMatches = _filteredMatches
-                .Where(m => m.HomeTeamId == _selectedTeamId || m.AwayTeamId == _selectedTeamId)
+                .Where(m => m.HomeTeamId == SelectedTeamId || m.AwayTeamId == SelectedTeamId)
                 .ToList();
         }
 
-        if (_selectedSeasonId.HasValue)
+        if (SelectedSeasonId.HasValue)
         {
             _filteredMatches = _filteredMatches
-                .Where(m => m.SeasonId == _selectedSeasonId)
+                .Where(m => m.SeasonId == SelectedSeasonId)
                 .ToList();
         }
 
+        _currentPage = 1; // Reset to the first page when filters are applied
         StateHasChanged();
+    }
+
+    private void NextPage()
+    {
+        if (_currentPage < TotalPages)
+        {
+            _currentPage++;
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+        }
     }
 }
