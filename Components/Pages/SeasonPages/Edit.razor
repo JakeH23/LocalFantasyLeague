@@ -25,16 +25,21 @@ else
                     <ValidationMessage For="@(() => _season.Name)" />
                 </div>
 
-                <div class="mb-3">
-                    <label for="startDate" class="form-label">Start Date</label>
-                    <InputDate id="startDate" class="form-control" @bind-Value="_season.StartDate" />
-                    <ValidationMessage For="@(() => _season.StartDate)" />
-                </div>
-
-                <div class="mb-3">
-                    <label for="endDate" class="form-label">End Date</label>
-                    <InputDate id="endDate" class="form-control" @bind-Value="_season.EndDate" />
-                    <ValidationMessage For="@(() => _season.EndDate)" />
+                <div class="row">
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <InputDate id="startDate" class="form-control" @bind-Value="_season.StartDate" />
+                            <ValidationMessage For="@(() => _season.StartDate)" />
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <InputDate id="endDate" class="form-control" @bind-Value="_season.EndDate" />
+                            <ValidationMessage For="@(() => _season.EndDate)" />
+                        </div>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary">Save Changes</button>

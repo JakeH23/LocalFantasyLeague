@@ -23,9 +23,16 @@
                     <td>@season.Name</td>
                     <td>@($"{season.StartDate:MMM dd, yyyy} - {season.EndDate:MMM dd, yyyy}")</td>
                     <td>
-                        <a href="/seasons/details/@season.Id" class="btn btn-outline-info btn-sm me-2">Details</a>
-                        <a href="/seasons/edit/@season.Id" class="btn btn-outline-warning btn-sm me-2">Edit</a>
-                        <a href="/seasons/delete/@season.Id" class="btn btn-outline-danger btn-sm me-2">Delete</a>
+                        @if (UserSession.CurrentUser == null)
+                        {
+                            <a href="/seasons/details/@season.Id" class="btn btn-outline-info btn-sm me-2">Details</a>
+                        }
+                        else
+                        {
+                            <a href="/seasons/details/@season.Id" class="btn btn-outline-info btn-sm me-2">Details</a>
+                            <a href="/seasons/edit/@season.Id" class="btn btn-outline-warning btn-sm me-2">Edit</a>
+                            <a href="/seasons/delete/@season.Id" class="btn btn-outline-danger btn-sm me-2">Delete</a>
+                        }
                     </td>
                 </tr>
             }
