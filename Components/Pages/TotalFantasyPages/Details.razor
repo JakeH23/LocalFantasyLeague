@@ -4,6 +4,19 @@
 
 <h3>Fantasy Player Points and Stats</h3>
 
+<!-- Season Filter -->
+<div class="mb-3">
+    <label for="seasonFilter" class="form-label">Filter by Season:</label>
+    <select id="seasonFilter" class="form-select" @bind="SelectedSeasonId">
+        <option value="0">-- All Seasons --</option>
+        @foreach (var season in _seasons)
+        {
+            <option value="@season.Id">@season.Name (@season.StartDate.ToString("dd/MM/yyyy") - @season.EndDate.ToString("dd/MM/yyyy"))</option>
+        }
+    </select>
+</div>
+
+<!-- Team Filter -->
 <div class="mb-3">
     <label for="teamFilter" class="form-label">Filter by Team:</label>
     <select id="teamFilter" class="form-select" @onchange="FilterPlayersByTeam">
@@ -53,12 +66,22 @@
     </table>
 </div>
 
-
 @code {
     private List<PlayerWithPoints> _playersWithPoints = [];
     private List<PlayerWithPoints> _filteredPlayersWithPoints = [];
     private List<Team> _teams = [];
+    private List<Season> _seasons = [];
     private int? _selectedTeamId;
+    private int SelectedSeasonId
+    {
+        get => _selectedSeasonId;
+        set
+        {
+            _selectedSeasonId = value;
+            FilterPlayersBySeason();
+        }
+    }
+    private int _selectedSeasonId = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,6 +89,7 @@
         var players = await db.Players.Include(p => p.PerformanceStats).Include(p => p.Team).ToListAsync();
 
         _teams = await DataService.GetAllAsync<Team>();
+        _seasons = await DataService.GetAllAsync<Season>();
 
         _playersWithPoints = players.Select(player => new PlayerWithPoints
             {
@@ -80,7 +104,8 @@
                 PenaltySaves = player.PerformanceStats.Sum(stat => stat.PenaltySaves),
                 CleanSheets = player.PerformanceStats.Count(stat => stat.CleanSheet),
                 PenaltyMissed = player.PerformanceStats.Sum(stat => stat.PenaltyMissed),
-                TotalPoints = PointCalculator.CalculateTotalPoints(player.PerformanceStats)
+                TotalPoints = PointCalculator.CalculateTotalPoints(player.PerformanceStats),
+                PerformanceStats = player.PerformanceStats
             }).ToList();
 
         _filteredPlayersWithPoints = _playersWithPoints; // Initially show all players
@@ -99,6 +124,58 @@
         {
             _selectedTeamId = null;
             _filteredPlayersWithPoints = _playersWithPoints; // Show all players if no team is selected
+        }
+
+        StateHasChanged(); // Notify Blazor to re-render the UI
+    }
+
+    private async void FilterPlayersBySeason()
+    {
+        if (SelectedSeasonId != 0)
+        {
+            // Get the selected season
+            var season = _seasons.FirstOrDefault(s => s.Id == SelectedSeasonId);
+            if (season != null)
+            {
+                // Fetch matches for the selected season
+                await using var db = await DbFactory.CreateDbContextAsync();
+                var matchesInSeason = await db.Matches
+                    .Where(m => m.SeasonId == season.Id)
+                    .Select(m => m.Id)
+                    .ToListAsync();
+
+                // Filter players based on performance stats in the selected season
+                _filteredPlayersWithPoints = _playersWithPoints
+                    .Select(player =>
+                    {
+                        var filteredStats = player.PerformanceStats
+                            .Where(stat => matchesInSeason.Contains(stat.MatchId))
+                            .ToList();
+
+                        return new PlayerWithPoints
+                            {
+                                Name = player.Name,
+                                TeamName = player.TeamName,
+                                TeamId = player.TeamId,
+                                Appearances = filteredStats.Count(stat => stat.Appearance),
+                                Goals = filteredStats.Sum(stat => stat.Goals),
+                                Assists = filteredStats.Sum(stat => stat.Assists),
+                                YellowCards = filteredStats.Count(stat => stat.YellowCard),
+                                RedCards = filteredStats.Count(stat => stat.RedCard),
+                                PenaltySaves = filteredStats.Sum(stat => stat.PenaltySaves),
+                                CleanSheets = filteredStats.Count(stat => stat.CleanSheet),
+                                PenaltyMissed = filteredStats.Sum(stat => stat.PenaltyMissed),
+                                TotalPoints = PointCalculator.CalculateTotalPoints(filteredStats)
+                            };
+                    })
+                    .Where(player => player.Appearances > 0) // Only include players with appearances
+                    .ToList();
+            }
+        }
+        else
+        {
+            // Show all players if no season is selected
+            _filteredPlayersWithPoints = _playersWithPoints;
         }
 
         StateHasChanged(); // Notify Blazor to re-render the UI

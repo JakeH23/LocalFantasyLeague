@@ -23,7 +23,8 @@
                     <td>
                         @if (_userFantasySelections.Any(selection => selection.MatchId == match.Id))
                         {
-                            <a href="/user-fantasy/edit/@match.Id" class="btn btn-outline-warning btn-sm">Edit Team</a>
+                            var selection = _userFantasySelections.First(s => s.MatchId == match.Id);
+                            <a href="/user-fantasy/edit/@selection.Id" class="btn btn-outline-warning btn-sm">Edit Team</a>
                         }
                         else
                         {
@@ -87,7 +88,7 @@
                                 </div>
                             }
                         </td>
-                        <td>
+                        <td class="text-center">
                             <span class="badge bg-success fs-5">@_gameTotalPoints[match.Id]</span>
                         </td>
                         <td>

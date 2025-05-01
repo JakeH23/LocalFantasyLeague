@@ -1,4 +1,6 @@
-﻿namespace LocalFantasyLeague.Models
+﻿using LocalFantasyLeague.Models.DbSets;
+
+namespace LocalFantasyLeague.Models
 {
     public class PlayerWithPoints
     {
@@ -15,5 +17,6 @@
         public int CleanSheets { get; set; }
         public int PenaltyMissed { get; set; }
         public int TotalPoints { get; set; }
+        public List<PerformanceStat> PerformanceStats { get; set; } = new();
     }
 }

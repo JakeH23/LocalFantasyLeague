@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LocalFantasyLeague.Migrations
 {
     [DbContext(typeof(LocalFantasyLeagueContext))]
-    [Migration("20250429151440_InitMigration")]
+    [Migration("20250501094110_InitMigration")]
     partial class InitMigration
     {
         /// <inheritdoc />

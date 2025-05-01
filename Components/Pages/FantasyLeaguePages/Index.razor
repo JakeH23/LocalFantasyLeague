@@ -7,11 +7,11 @@
     <!-- Season Filter -->
     <div class="mb-4">
         <label for="seasonFilter" class="form-label">Filter by Season:</label>
-        <select id="seasonFilter" class="form-select" @onchange="FilterBySeason">
-            <option value="">-- All Seasons --</option>
+        <select id="seasonFilter" class="form-select" @bind="SelectedSeasonId">
+            <option value="0">-- All Seasons --</option>
             @foreach (var season in _seasons)
             {
-                <option value="@season.Id">@season.Name (@season.StartDate:MMM yyyy - @season.EndDate:MMM yyyy)</option>
+                <option value="@season.Id">@season.Name (@season.StartDate.ToString("dd/MM/yyyy") - @season.EndDate.ToString("dd/MM/yyyy"))</option>
             }
         </select>
     </div>
@@ -70,12 +70,25 @@
 @code {
     private List<LeagueEntry> _leagueEntries = [];
     private List<Season> _seasons = [];
-    private int? _selectedSeasonId;
+    private int SelectedSeasonId 
+    {
+        get => _selectedSeasonId;
+        set
+        {
+            _selectedSeasonId = value;
+            FilterBySeason();
+        }
+    }
+    private int _selectedSeasonId = 0;
 
     protected override async Task OnInitializedAsync()
     {
         // Load all seasons
         _seasons = await DataService.GetAllAsync<Season>();
+        // Pre-select the current season
+        
+        var today = DateTime.Today;
+        SelectedSeasonId = _seasons.FirstOrDefault(s => today >= s.StartDate && today <= s.EndDate)?.Id ?? 0;
 
         // Load league data
         await LoadLeagueData();
@@ -90,9 +103,9 @@
         var allSelections = await DataService.GetAllAsync<UserFantasySelection>();
 
         // Filter selections by season if a season is selected
-        if (_selectedSeasonId.HasValue)
+        if (SelectedSeasonId != 0)
         {
-            var season = _seasons.FirstOrDefault(s => s.Id == _selectedSeasonId.Value);
+            var season = _seasons.FirstOrDefault(s => s.Id == SelectedSeasonId);
             if (season != null)
             {
                 var matchesInSeason = await DataService.GetAllAsync<Match>();
@@ -144,19 +157,67 @@
 
         StateHasChanged();
     }
-
-
-    private async Task FilterBySeason(ChangeEventArgs e)
+    
+    private async void FilterBySeason()
     {
-        if (int.TryParse(e.Value?.ToString(), out var seasonId))
+        // Reload all fantasy selections
+        var allSelections = await DataService.GetAllAsync<UserFantasySelection>();
+
+        // Filter selections by season if a season is selected
+        if (SelectedSeasonId != 0)
         {
-            _selectedSeasonId = seasonId;
-        }
-        else
-        {
-            _selectedSeasonId = null;
+            var season = _seasons.FirstOrDefault(s => s.Id == SelectedSeasonId);
+            if (season != null)
+            {
+                var matchesInSeason = await DataService.GetAllAsync<Match>();
+                var seasonMatchIds = matchesInSeason
+                    .Where(m => m.SeasonId == season.Id)
+                    .Select(m => m.Id)
+                    .ToList();
+
+                allSelections = allSelections
+                    .Where(s => seasonMatchIds.Contains(s.MatchId))
+                    .ToList();
+            }
         }
 
-        await LoadLeagueData();
+        // Load performance stats
+        var allMatchIds = allSelections.Select(s => s.MatchId).Distinct().ToList();
+        var performanceStats = await DataService.GetAllAsync<PerformanceStat>();
+        performanceStats = performanceStats.Where(ps => allMatchIds.Contains(ps.MatchId)).ToList();
+
+        // Calculate total points for each user
+        var users = await DataService.GetAllAsync<User>();
+        _leagueEntries = users.Select(user =>
+        {
+            var userSelections = allSelections.Where(s => s.UserId == user.Id).ToList();
+            var totalPoints = 0;
+
+            foreach (var selection in userSelections)
+            {
+                var matchStats = performanceStats.Where(ps => ps.MatchId == selection.MatchId).ToList();
+
+                foreach (var playerId in selection.Players)
+                {
+                    var playerStats = matchStats.Where(ps => ps.PlayerId == playerId).ToList();
+                    var points = PointCalculator.CalculateTotalPoints(playerStats);
+
+                    // Double points for captain
+                    if (selection.CaptainedPlayerId == playerId)
+                    {
+                        points *= 2;
+                    }
+
+                    totalPoints += points;
+                }
+            }
+
+            return new LeagueEntry { Username = user.Username, TotalPoints = totalPoints };
+        })
+        .OrderByDescending(entry => entry.TotalPoints)
+        .ToList();
+
+        StateHasChanged();
     }
+
 }
