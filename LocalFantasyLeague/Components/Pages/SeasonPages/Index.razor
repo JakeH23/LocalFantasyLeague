@@ -1,0 +1,49 @@
+﻿@page "/seasons"
+
+<h3 class="text-center my-4 text-primary">All Seasons</h3>
+@if (UserSession.CurrentUser != null)
+{
+    <a href="/seasons/create" class="btn btn-outline-primary mb-3">Add Season</a>
+}
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover table-bordered">
+        <thead class="bg-light text-dark">
+            <tr>
+                <th>Name</th>
+                <th>Duration</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var season in _seasons)
+            {
+                <tr>
+                    <td>@season.Name</td>
+                    <td>@($"{season.StartDate:MMM dd, yyyy} - {season.EndDate:MMM dd, yyyy}")</td>
+                    <td>
+                        @if (UserSession.CurrentUser == null)
+                        {
+                            <a href="/seasons/details/@season.Id" class="btn btn-outline-info btn-sm me-2">Details</a>
+                        }
+                        else
+                        {
+                            <a href="/seasons/details/@season.Id" class="btn btn-outline-info btn-sm me-2">Details</a>
+                            <a href="/seasons/edit/@season.Id" class="btn btn-outline-warning btn-sm me-2">Edit</a>
+                            <a href="/seasons/delete/@season.Id" class="btn btn-outline-danger btn-sm me-2">Delete</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private List<Season> _seasons = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _seasons = await SeasonService.GetSeasonListOrderedByDescendingStartDate();
+    }
+}

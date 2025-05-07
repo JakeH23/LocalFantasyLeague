@@ -1,0 +1,82 @@
+﻿@page "/admin"
+
+<h3 class="text-center my-4 text-danger">Admin: Actions to Complete</h3>
+
+<!-- Actions to Complete Section -->
+@if (_matchesToComplete.Any())
+{
+    <div class="table-responsive mb-5">
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="bg-light text-dark">
+                <tr>
+                    <th>Kickoff</th>
+                    <th>Match</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var match in _matchesToComplete)
+                {
+                    <tr>
+                        <td>@match.Kickoff.ToString("d")</td>
+                        <td>@match.HomeTeam?.Name vs @match.AwayTeam?.Name</td>
+                        <td>
+                            <a href="/matches/edit/@match.Id" class="btn btn-outline-danger btn-sm">Edit Match</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (_matchesNeedingSelections.Any())
+{
+    <h4 class="text-warning">Upcoming Matches Needing Selections</h4>
+    <div class="table-responsive mb-5">
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="bg-light text-dark">
+                <tr>
+                    <th>Kickoff</th>
+                    <th>Match</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var match in _matchesNeedingSelections)
+                {
+                    <tr>
+                        <td>@match.Kickoff.ToString("d")</td>
+                        <td>@match.HomeTeam?.Name vs @match.AwayTeam?.Name</td>
+                        <td>
+                            <a href="/user-fantasy/create/@match.Id" class="btn btn-outline-warning btn-sm">Create Selection</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-success">You have no actions to complete</div>
+}
+
+@code {
+    private List<Match> _matches = [];
+    private List<Match> _matchesToComplete = [];
+    private List<Match> _matchesNeedingSelections = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load all matches
+        _matches = await MatchService.GetMatchListIncludingTeamsAndStats();
+
+        // Filter matches that need actions (no stats)
+        _matchesToComplete = _matches.Where(m => m.Kickoff < DateTime.Now && !m.Stats.Any()).ToList();
+
+        // Filter upcoming matches in the next 7 days where the user has not created a selection
+        var userSelections = await UserFantasySelectionService.GetUserFantasySelectionListOfMatchIdsFilteredByUserId(UserSession.CurrentUser!.Id);
+
+        _matchesNeedingSelections = await MatchService.GetMatchListForNextSevenDaysRequiringFantasyPicks(userSelections);
+    }
+}

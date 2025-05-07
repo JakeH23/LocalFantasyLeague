@@ -1,0 +1,64 @@
+﻿@page "/matches/delete/{Id:int}"
+
+<h3>Delete Match</h3>
+
+@if (Match == null)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mt-4">
+        <div class="card-body">
+            <h5>Are you sure you want to delete the following match?</h5>
+            <dl class="row">
+                <dt class="col-sm-3">Home Team</dt>
+                <dd class="col-sm-9">@Match.HomeTeam?.Name</dd>
+
+                <dt class="col-sm-3">Away Team</dt>
+                <dd class="col-sm-9">@Match.AwayTeam?.Name</dd>
+
+                <dt class="col-sm-3">Kickoff</dt>
+                <dd class="col-sm-9">@Match.Kickoff.ToString("MMM dd, yyyy hh:mm tt")</dd>
+            </dl>
+
+            <button class="btn btn-danger" @onclick="DeleteMatch">Delete</button>
+            <button class="btn btn-secondary ms-2" @onclick="Cancel">Cancel</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    public Match? Match;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Match = await MatchService.GetMatchIncludingTeamsByMatchId(Id);
+
+        if (Match == null)
+        {
+            Navigation.NavigateTo("/matches");
+        }
+    }
+
+    private async Task DeleteMatch()
+    {
+        if (Match is not null)
+        {
+            await DataService.RemoveAsync(Match);
+        }
+
+        Navigation.NavigateTo("/matches");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/matches");
+    }
+}

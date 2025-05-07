@@ -1,0 +1,180 @@
+﻿@page "/user-fantasy"
+
+<h3 class="text-center my-4 text-secondary">My Fantasy Picks</h3>
+
+<!-- Upcoming Matches Section -->
+<h4 class="text-info">Upcoming Matches</h4>
+<div class="table-responsive mb-5">
+    <table class="table table-striped table-hover table-bordered">
+        <thead class="bg-light text-dark">
+            <tr>
+                <th>Kickoff</th>
+                <th>Opponent</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var match in _upcomingMatches)
+            {
+                <tr>
+                    <td>@match.Kickoff.ToString("d")</td>
+                    <td>@(match.HomeTeamId == UserSession.CurrentUser?.TeamId ? match.AwayTeam?.Name : match.HomeTeam?.Name)</td>
+                    <td>
+                        @if (_userFantasySelections.Any(selection => selection.MatchId == match.Id))
+                        {
+                            var selection = _userFantasySelections.First(s => s.MatchId == match.Id);
+                            <a href="/user-fantasy/edit/@selection.Id" class="btn btn-outline-warning btn-sm">Edit Team</a>
+                        }
+                        else
+                        {
+                            <a href="/user-fantasy/create/@match.Id" class="btn btn-outline-primary btn-sm">Pick Team</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Past Matches Section -->
+<h4 class="text-success">Past Matches</h4>
+<div class="table-responsive">
+    <table class="table table-striped table-hover table-bordered">
+        <thead class="bg-light text-dark">
+            <tr>
+                <th>Kickoff</th>
+                <th>Opponent</th>
+                <th>Selected Players</th>
+                <th>Total Points</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var match in _pastMatches)
+            {
+                var selection = _userFantasySelections.FirstOrDefault(s => s.MatchId == match.Id);
+                if (selection != null)
+                {
+                    <tr>
+                        <td>@match.Kickoff.ToString("d")</td>
+                        <td>@(match.HomeTeamId == UserSession.CurrentUser?.TeamId ? match.AwayTeam?.Name : match.HomeTeam?.Name)</td>
+                        <td>
+                            @if (selection.Players.Any())
+                            {
+                                <div class="d-flex flex-wrap">
+                                    @foreach (var playerInfo in selection.Players
+                                   .Select(playerId => new
+                                   {
+                                       Player = _players.FirstOrDefault(p => p.Id == playerId),
+                                       Points = _playerPoints.ContainsKey(match.Id) && _playerPoints[match.Id].ContainsKey(playerId)
+                                   ? _playerPoints[match.Id][playerId]
+                                   : 0,
+                                       IsCaptain = selection.CaptainedPlayerId == playerId
+                                   })
+                                   .OrderByDescending(p => p.Points))
+                                    {
+                                        if (playerInfo.Player != null)
+                                        {
+                                            <span class="badge bg-secondary text-white me-1 mb-1">
+                                                @playerInfo.Player.Name (@playerInfo.Points pts)
+                                                @if (playerInfo.IsCaptain)
+                                                {
+                                                    <span class="badge bg-danger ms-1">C</span>
+                                                }
+                                            </span>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-success fs-5">@_gameTotalPoints[match.Id]</span>
+                        </td>
+                        <td>
+                            <a href="/user-fantasy/details/@selection.Id" class="btn btn-outline-info btn-sm me-2">Fantasy Details</a>
+                            <a href="/matches/details/@match.Id" class="btn btn-outline-secondary btn-sm">Match Details</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+        <tfoot>
+            <tr class="bg-light">
+                <td colspan="4" class="text-end fw-bold text-dark">Overall Total Points:</td>
+                <td class="fw-bold text-success fs-4">@_overallTotalPoints</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+@code {
+    private List<Match> _matches = [];
+    private List<Match> _upcomingMatches = [];
+    private List<Match> _pastMatches = [];
+    private List<UserFantasySelection> _userFantasySelections = [];
+    private List<Player> _players = [];
+    private readonly Dictionary<int, Dictionary<int, int>> _playerPoints = new();
+    private readonly Dictionary<int, int> _gameTotalPoints = new();
+    private int _overallTotalPoints = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserSession.CurrentUser == null)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+        ;
+
+        // Load matches
+        _matches = await MatchService.GetMatchListIncludingTeamsForCurrentUserTeamId(UserSession.CurrentUser.TeamId.Value);
+
+        // Split matches into upcoming and past
+        var now = DateTime.Now;
+        _upcomingMatches = _matches.Where(m => m.Kickoff >= now).ToList();
+        _pastMatches = _matches.Where(m => m.Kickoff < now).ToList();
+
+        // Load user fantasy selections
+        _userFantasySelections = await UserFantasySelectionService.GetUserFantasySelectionListFilteredByUserId(UserSession.CurrentUser!.Id);
+
+        // Load players
+        var playerIds = _userFantasySelections.SelectMany(s => s.Players).Distinct().ToList();
+        _players = await PlayerService.GetPlayerListFilteredByPlayerIdList(playerIds);
+
+        // Load performance stats and calculate points
+        var pastMatchIds = _pastMatches.Select(m => m.Id).ToList();
+
+        var performanceStats = await PerformanceStatService.GetPerformanceStatListFilteredByMatchIds(pastMatchIds);
+
+        foreach (var selection in _userFantasySelections)
+        {
+            var matchStats = performanceStats.Where(ps => ps.MatchId == selection.MatchId).ToList();
+            var gameTotal = 0;
+
+            foreach (var playerId in selection.Players)
+            {
+                var playerStats = matchStats.Where(ps => ps.PlayerId == playerId).ToList();
+                var points = PointCalculator.CalculateTotalPoints(playerStats);
+
+                // Double points for captain
+                if (selection.CaptainedPlayerId == playerId)
+                {
+                    points *= 2;
+                }
+
+                if (!_playerPoints.ContainsKey(selection.MatchId))
+                {
+                    _playerPoints[selection.MatchId] = new Dictionary<int, int>();
+                }
+
+                _playerPoints[selection.MatchId][playerId] = points;
+                gameTotal += points;
+            }
+
+            _gameTotalPoints[selection.MatchId] = gameTotal;
+            _overallTotalPoints += gameTotal;
+        }
+
+        StateHasChanged();
+    }
+}

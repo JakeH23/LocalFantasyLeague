@@ -1,0 +1,127 @@
+﻿@page "/user-fantasy/edit/{selectionId:int}"
+@rendermode InteractiveServer
+
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="card-title mb-0">Edit Fantasy Selection</h3>
+        </div>
+        <div class="card-body">
+            @if (_selectedPlayers.Count != 3)
+            {
+                <div class="mb-4">
+                    <label for="playerSelect" class="form-label">Select Players (Max 3 from the same team):</label>
+                    <select id="playerSelect" class="form-select" @onchange="OnPlayerSelected" disabled="@(_selectedPlayers.Count >= 3)">
+                        <option value="">-- Select a Player --</option>
+                        @foreach (var player in _players.Except(_selectedPlayers))
+                        {
+                            <option value="@player.Id">@player.Name (@player.Team.Name)</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            <div class="mb-4">
+                <h5 class="text-secondary">Selected Players</h5>
+                <div class="d-flex flex-wrap">
+                    @foreach (var player in _selectedPlayers)
+                    {
+                        <div class="player-card" style="display: flex; align-items: center; margin: 5px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #f9f9f9; width: 200px; justify-content: space-between;">
+                            <img src="shirt.png" alt="Player Shirt" class="player-icon" style="width: 30px; height: 30px; margin-right: 10px;" />
+                            <span>@player.Name</span>
+                            <button class="btn btn-sm btn-danger" @onclick="() => RemovePlayer(player.Id)">
+                                <i class="bi bi-x-circle"></i> <!-- Bootstrap icon for "Remove" -->
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h5 class="text-secondary">Select Captain (Optional)</h5>
+                <div class="form-group">
+                    <label for="captainSelect" class="form-label">Captain</label>
+                    <select id="captainSelect" class="form-select" @bind="_captainedPlayerId">
+                        <option value="">-- No Captain --</option>
+                        @foreach (var player in _selectedPlayers)
+                        {
+                            <option value="@player.Id">@player.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button class="btn btn-primary" @onclick="SaveSelection" disabled="@(!CanSave)">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int SelectionId { get; set; }
+
+    private List<Player> _players = [];
+    private List<Player> _selectedPlayers = [];
+    private int? _captainedPlayerId;
+    private bool CanSave => _selectedPlayers.Count == 3;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load the existing selection
+        var selection = await DataService.GetByIdAsync<UserFantasySelection>(SelectionId);
+
+        if (selection != null)
+        {
+            // Load the players for the selection
+            _selectedPlayers = await PlayerService.GetPlayerListFilteredByPlayerIdList(selection.Players);
+
+            // Set the captain
+            _captainedPlayerId = selection.CaptainedPlayerId;
+
+            // Load all players for the match
+            var match = await MatchService.GetMatchIncludingTeamsByMatchId(selection.MatchId);
+
+            if (match != null)
+            {
+                _players = await PlayerService.GetPlayerListIncludingTeamFilteredByTeamIds(match.HomeTeamId, match.AwayTeamId);
+            }
+        }
+    }
+
+    private void OnPlayerSelected(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var playerId) && _selectedPlayers.Count < 3)
+        {
+            var player = _players.FirstOrDefault(p => p.Id == playerId);
+            if (player != null && _selectedPlayers.All(p => p.Id != playerId))
+            {
+                _selectedPlayers.Add(player);
+            }
+        }
+    }
+
+    private void RemovePlayer(int playerId)
+    {
+        _selectedPlayers.RemoveAll(p => p.Id == playerId);
+        if (_captainedPlayerId == playerId)
+        {
+            _captainedPlayerId = null;
+        }
+    }
+
+    private async Task SaveSelection()
+    {
+        // Update the existing selection
+        var selection = await DataService.GetByIdAsync<UserFantasySelection>(SelectionId);
+        if (selection != null)
+        {
+            selection.Players = _selectedPlayers.Select(p => p.Id).ToList();
+            selection.CaptainedPlayerId = _captainedPlayerId;
+            await DataService.UpdateAsync(selection);
+        }
+
+        // Navigate back to the main page
+        Navigation.NavigateTo("/user-fantasy");
+    }
+}

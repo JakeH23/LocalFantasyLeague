@@ -1,0 +1,113 @@
+﻿@page "/user-fantasy/create/{matchId:int}"
+@rendermode InteractiveServer
+
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="card-title mb-0">Create Fantasy Selection</h3>
+        </div>
+        <div class="card-body">
+            <EditForm Model="_userFantasySelection" OnValidSubmit="SaveSelection">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger mb-3" role="alert" />
+
+                <div class="mb-4">
+                    <h5 class="text-secondary">Select Players</h5>
+                    <div class="row">
+                        <div class="col-4">
+
+                            <div class="form-group mb-3">
+                                <label for="player1Select" class="form-label">Player 1</label>
+                                <select id="player1Select" class="form-select" @bind="_userFantasySelection.Players[0]">
+                                    <option value="">-- Select a Player --</option>
+                                    @foreach (var player in _players)
+                                    {
+                                        <option value="@player.Id">@player.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="form-group mb-3">
+                                <label for="player2Select" class="form-label">Player 2</label>
+                                <select id="player2Select" class="form-select" @bind="_userFantasySelection.Players[1]">
+                                    <option value="">-- Select a Player --</option>
+                                    @foreach (var player in _players)
+                                    {
+                                        <option value="@player.Id">@player.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-4">
+
+                            <div class="form-group mb-3">
+                                <label for="player3Select" class="form-label">Player 3</label>
+                                <select id="player3Select" class="form-select" @bind="_userFantasySelection.Players[2]">
+                                    <option value="">-- Select a Player --</option>
+                                    @foreach (var player in _players)
+                                    {
+                                        <option value="@player.Id">@player.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+
+                </div>
+
+                <div class="mb-4">
+                    <h5 class="text-secondary">Select Captain (Optional)</h5>
+                    <div class="form-group">
+                        <label for="captainSelect" class="form-label">Captain</label>
+                        <select id="captainSelect" class="form-select" @bind="_userFantasySelection.CaptainedPlayerId">
+                            <option value="">-- No Captain --</option>
+                            @foreach (var playerId in _userFantasySelection.Players)
+                            {
+                                var player = _players.FirstOrDefault(p => p.Id == playerId);
+                                if (player != null)
+                                {
+                                    <option value="@player.Id">@player.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button class="btn btn-primary" type="submit" disabled="@(!CanSave)">Save</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int MatchId { get; set; }
+
+    private readonly UserFantasySelection _userFantasySelection = new() { MatchId = 0, Players = [0, 0, 0], CaptainedPlayerId = null };
+
+    private List<Player> _players = [];
+
+    private bool CanSave => _userFantasySelection.Players.Count == 3 &&
+                            _userFantasySelection.Players.All(p => p != 0) &&
+                            _userFantasySelection.Players.Select(p => _players.FirstOrDefault(pl => pl.Id == p)?.TeamId).Distinct().Count() == 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _players = await PlayerService.GetPlayerListIncludingTeamFilteredByMatchId(MatchId);
+
+        _userFantasySelection.MatchId = MatchId;
+    }
+
+    private async Task SaveSelection()
+    {
+        _userFantasySelection.UserId = UserSession.CurrentUser?.Id;
+
+        await DataService.AddAsync(_userFantasySelection);
+        Navigation.NavigateTo("/user-fantasy");
+    }
+}
