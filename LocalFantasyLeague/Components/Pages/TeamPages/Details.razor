@@ -106,7 +106,7 @@ else
             </div>
             <div id="seasonResults" class="collapse show">
                 <div class="card-body">
-                    @if (SeasonResults != null && SeasonResults.Any())
+                    @if (_seasonResults != null && _seasonResults.Any())
                     {
                         <div class="table-responsive">
                             <table class="table table-striped table-hover table-bordered">
@@ -120,7 +120,7 @@ else
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var result in SeasonResults)
+                                    @foreach (var result in _seasonResults)
                                     {
                                         <tr>
                                             <td>
@@ -138,10 +138,10 @@ else
                                     <!-- Combined Results Row -->
                                     <tr class="table-secondary">
                                         <td><strong>All Time</strong></td>
-                                        <td class="numeric-column"><strong>@CombinedResults.TotalMatches</strong></td>
-                                        <td class="numeric-column"><strong>@CombinedResults.Wins</strong></td>
-                                        <td class="numeric-column"><strong>@CombinedResults.Losses</strong></td>
-                                        <td class="numeric-column"><strong>@CombinedResults.Draws</strong></td>
+                                        <td class="numeric-column"><strong>@_combinedResults.TotalMatches</strong></td>
+                                        <td class="numeric-column"><strong>@_combinedResults.Wins</strong></td>
+                                        <td class="numeric-column"><strong>@_combinedResults.Losses</strong></td>
+                                        <td class="numeric-column"><strong>@_combinedResults.Draws</strong></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -164,8 +164,8 @@ else
     private Team? Team { get; set; }
     private List<Match> _matches = [];
     private List<Season> _seasons = [];
-    private List<SeasonResult> SeasonResults = [];
-    private SeasonResult CombinedResults = new();
+    private List<SeasonResult> _seasonResults = [];
+    private SeasonResult _combinedResults = new();
 
     private int SelectedSeasonId
     {
@@ -200,13 +200,13 @@ else
     {
         if (_matches == null || !_matches.Any())
         {
-            SeasonResults = new List<SeasonResult>();
-            CombinedResults = new SeasonResult();
+            _seasonResults = new List<SeasonResult>();
+            _combinedResults = new SeasonResult();
             return;
         }
 
         // Group matches by season and calculate results
-        SeasonResults = _matches
+        _seasonResults = _matches
             .Where(m => m.Season != null)
             .GroupBy(m => m.Season!.Id)
             .Select(g =>
@@ -233,7 +233,7 @@ else
             .ToList();
 
         // Calculate combined results
-        CombinedResults = new SeasonResult
+        _combinedResults = new SeasonResult
             {
                 TotalMatches = _matches.Count,
                 Wins = _matches.Count(m => (m.HomeTeamId == Team!.Id && m.HomeTeamGoals > m.AwayTeamGoals) || (m.AwayTeamId == Team!.Id && m.AwayTeamGoals > m.HomeTeamGoals)),
@@ -276,31 +276,5 @@ else
                     PenaltyMissed = player.PerformanceStats.Where(s => s.Match?.SeasonId == SelectedSeasonId).Sum(s => s.PenaltyMissed)
                 }).ToList() ?? [];
         }
-    }
-
-    private class PlayerStats
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public int Appearances { get; set; }
-        public int Goals { get; set; }
-        public int Assists { get; set; }
-        public int YellowCards { get; set; }
-        public int RedCards { get; set; }
-        public int PenaltySaves { get; set; }
-        public int CleanSheets { get; set; }
-        public int PenaltyMissed { get; set; }
-    }
-
-    private class SeasonResult
-    {
-        public int SeasonId { get; set; }
-        public string SeasonName { get; set; } = string.Empty;
-        public DateTime SeasonStartDate { get; set; }
-        public DateTime SeasonEndDate { get; set; }
-        public int TotalMatches { get; set; }
-        public int Wins { get; set; }
-        public int Losses { get; set; }
-        public int Draws { get; set; }
     }
 }

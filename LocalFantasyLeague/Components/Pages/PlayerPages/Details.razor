@@ -255,17 +255,17 @@ else
         {
             // Group performance stats by season and fetch season details in parallel
             var seasonGroups = Player.PerformanceStats
-                .Where(ps => ps.Match?.Season != null)
+                .Where(ps => ps.Match?.Season != null && ps.Appearance)
                 .GroupBy(ps => ps.Match!.Season!.Id);
 
             var seasonTasks = seasonGroups.Select(async group =>
             {
                 var season = await SeasonService.GetSeasonBySeasonId(group.Key);
                 return new SeasonStats
-                {
-                    Season = season!,
-                    Stats = group.ToList()
-                };
+                    {
+                        Season = season!,
+                        Stats = group.ToList()
+                    };
             });
 
             // Await all season tasks and order by start date

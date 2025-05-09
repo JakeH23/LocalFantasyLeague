@@ -187,3 +187,16 @@ h1:focus {
 .form-group {
     margin-bottom: 15px;
 }
+
+.navbar {
+    background: linear-gradient(90deg, #007bff, #6610f2); /* Blue to purple gradient */
+    color: white;
+}
+
+    .navbar a {
+        color: white;
+    }
+
+        .navbar a:hover {
+            color: #ffd700; /* Gold color on hover */
+        }

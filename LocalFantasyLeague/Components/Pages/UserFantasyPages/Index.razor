@@ -4,6 +4,8 @@
 
 <!-- Upcoming Matches Section -->
 <h4 class="text-info">Upcoming Matches</h4>
+@if (_upcomingMatches.Any())
+{
 <div class="table-responsive mb-5">
     <table class="table table-striped table-hover table-bordered">
         <thead class="bg-light text-dark">
@@ -35,7 +37,11 @@
         </tbody>
     </table>
 </div>
-
+}
+else
+{
+    <p class="text-muted">No upcoming matches requiring your picks.</p>
+}
 <!-- Past Matches Section -->
 <h4 class="text-success">Past Matches</h4>
 <div class="table-responsive">
