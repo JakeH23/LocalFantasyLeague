@@ -16,11 +16,11 @@ namespace LocalFantasyLeagueTests.Components.FantasyLeaguePages
             // No need to explicitly call OnInitializedAsync; it is invoked automatically.
 
             // Assert
-            Assert.That(component.Instance._seasons, Is.Not.Null);
+            Assert.That(component.Instance.Seasons, Is.Not.Null);
             Assert.Multiple(() =>
             {
-                Assert.That(component.Instance._seasons, Has.Count.EqualTo(1));
-                Assert.That(component.Instance._leagueEntries, Is.Not.Null);
+                Assert.That(component.Instance.Seasons, Has.Count.EqualTo(1));
+                Assert.That(component.Instance.LeagueEntries, Is.Not.Null);
             });
         }
 
@@ -34,7 +34,7 @@ namespace LocalFantasyLeagueTests.Components.FantasyLeaguePages
             await component.InvokeAsync(() => component.Instance.LoadLeagueData());
 
             // Assert
-            var leagueEntries = component.Instance._leagueEntries;
+            var leagueEntries = component.Instance.LeagueEntries;
             Assert.That(leagueEntries, Has.Count.EqualTo(2));
             Assert.Multiple(() =>
             {
@@ -54,7 +54,7 @@ namespace LocalFantasyLeagueTests.Components.FantasyLeaguePages
             await component.InvokeAsync(() => component.Instance.FilterBySeason());
 
             // Assert
-            var leagueEntries = component.Instance._leagueEntries;
+            var leagueEntries = component.Instance.LeagueEntries;
             Assert.That(leagueEntries, Is.Not.Null);
             Assert.That(leagueEntries.All(entry => new[] { "User1", "User2" }.Contains(entry.Username)));
         }

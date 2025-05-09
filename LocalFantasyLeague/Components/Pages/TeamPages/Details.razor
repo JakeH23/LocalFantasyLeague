@@ -53,19 +53,38 @@ else
                             <table class="table table-striped table-hover table-bordered">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th>Player</th>
-                                        <th>Appearances</th>
-                                        <th>Goals</th>
-                                        <th>Assists</th>
-                                        <th>Yellow Cards</th>
-                                        <th>Red Cards</th>
-                                        <th>Penalty Saves</th>
-                                        <th>Clean Sheets</th>
-                                        <th>Penalty Missed</th>
+                                        <th style="cursor:pointer" @onclick='() => SortPlayersTable("Name")'>
+                                            Player @SortingHelper.RenderSortIcon("Name", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortPlayersTable("Appearances")'>
+                                            Appearances @SortingHelper.RenderSortIcon("Appearances", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortPlayersTable("Goals")'>
+                                            Goals @SortingHelper.RenderSortIcon("Goals", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortPlayersTable("Assists")'>
+                                            Assists @SortingHelper.RenderSortIcon("Assists", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortPlayersTable("YellowCards")'>
+                                            Yellow Cards @SortingHelper.RenderSortIcon("YellowCards", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortPlayersTable("RedCards")'>
+                                            Red Cards @SortingHelper.RenderSortIcon("RedCards", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortPlayersTable("PenaltySaves")'>
+                                            Penalty Saves @SortingHelper.RenderSortIcon("PenaltySaves", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortPlayersTable("CleanSheets")'>
+                                            Clean Sheets @SortingHelper.RenderSortIcon("CleanSheets", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortPlayersTable("PenaltyMissed")'>
+                                            Penalty Missed @SortingHelper.RenderSortIcon("PenaltyMissed", _currentSortColumn, _isSortAscending)
+                                        </th>
                                     </tr>
                                 </thead>
+
                                 <tbody>
-                                    @foreach (var player in _filteredPlayers.OrderByDescending(p => p.Appearances))
+                                    @foreach (var player in _filteredPlayers)
                                     {
                                         <tr>
                                             <td>
@@ -112,11 +131,21 @@ else
                             <table class="table table-striped table-hover table-bordered">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th>Season</th>
-                                        <th>Total Matches</th>
-                                        <th>Wins</th>
-                                        <th>Losses</th>
-                                        <th>Draws</th>
+                                        <th style="cursor:pointer" @onclick='() => SortSeasonsTable("SeasonStartDate")'>
+                                            Season @SortingHelper.RenderSortIcon("SeasonStartDate", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortSeasonsTable("TotalMatches")'>
+                                            Total Matches @SortingHelper.RenderSortIcon("TotalMatches", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortSeasonsTable("Wins")'>
+                                            Wins @SortingHelper.RenderSortIcon("Wins", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortSeasonsTable("Losses")'>
+                                            Losses @SortingHelper.RenderSortIcon("Losses", _currentSortColumn, _isSortAscending)
+                                        </th>
+                                        <th style="cursor:pointer" @onclick='() => SortSeasonsTable("Draws")'>
+                                            Draws @SortingHelper.RenderSortIcon("Draws", _currentSortColumn, _isSortAscending)
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -178,6 +207,8 @@ else
     }
     private int _selectedSeasonId;
     private List<PlayerStats> _filteredPlayers = [];
+    private string _currentSortColumn = "";
+    private bool _isSortAscending = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -194,6 +225,9 @@ else
         SelectedSeasonId = _seasons.FirstOrDefault(s => today >= s.StartDate && today <= s.EndDate)?.Id ?? 0;
 
         FilterStats();
+
+        _currentSortColumn = "Appearances";
+        SortPlayersTable("Appearances");
     }
 
     private void CalculateSeasonResults()
@@ -205,8 +239,11 @@ else
             return;
         }
 
+        // Filter matches to include only those that have been played
+        var playedMatches = _matches.Where(m => m.Kickoff <= DateTime.Now).ToList();
+
         // Group matches by season and calculate results
-        _seasonResults = _matches
+        _seasonResults = playedMatches
             .Where(m => m.Season != null)
             .GroupBy(m => m.Season!.Id)
             .Select(g =>
@@ -235,12 +272,13 @@ else
         // Calculate combined results
         _combinedResults = new SeasonResult
             {
-                TotalMatches = _matches.Count,
-                Wins = _matches.Count(m => (m.HomeTeamId == Team!.Id && m.HomeTeamGoals > m.AwayTeamGoals) || (m.AwayTeamId == Team!.Id && m.AwayTeamGoals > m.HomeTeamGoals)),
-                Losses = _matches.Count(m => (m.HomeTeamId == Team!.Id && m.HomeTeamGoals < m.AwayTeamGoals) || (m.AwayTeamId == Team!.Id && m.AwayTeamGoals < m.HomeTeamGoals)),
-                Draws = _matches.Count(m => m.HomeTeamGoals == m.AwayTeamGoals)
+                TotalMatches = playedMatches.Count,
+                Wins = playedMatches.Count(m => (m.HomeTeamId == Team!.Id && m.HomeTeamGoals > m.AwayTeamGoals) || (m.AwayTeamId == Team!.Id && m.AwayTeamGoals > m.HomeTeamGoals)),
+                Losses = playedMatches.Count(m => (m.HomeTeamId == Team!.Id && m.HomeTeamGoals < m.AwayTeamGoals) || (m.AwayTeamId == Team!.Id && m.AwayTeamGoals < m.HomeTeamGoals)),
+                Draws = playedMatches.Count(m => m.HomeTeamGoals == m.AwayTeamGoals)
             };
     }
+
 
     private void FilterStats()
     {
@@ -276,5 +314,15 @@ else
                     PenaltyMissed = player.PerformanceStats.Where(s => s.Match?.SeasonId == SelectedSeasonId).Sum(s => s.PenaltyMissed)
                 }).ToList() ?? [];
         }
+    }
+
+    private void SortPlayersTable(string columnName)
+    {
+        SortingHelper.SortTable(ref _filteredPlayers, columnName, ref _currentSortColumn, ref _isSortAscending);
+    }
+
+    private void SortSeasonsTable(string columnName)
+    {
+        SortingHelper.SortTable(ref _seasonResults, columnName, ref _currentSortColumn, ref _isSortAscending);
     }
 }

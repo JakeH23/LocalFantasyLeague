@@ -16,6 +16,7 @@ namespace LocalFantasyLeague.Models
         public int PenaltySaves { get; set; }
         public int CleanSheets { get; set; }
         public int PenaltyMissed { get; set; }
+        public double AveragePointsPerGame { get; set; }
         public int TotalPoints { get; set; }
         public List<PerformanceStat> PerformanceStats { get; set; } = new();
     }

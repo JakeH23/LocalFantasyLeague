@@ -1,20 +1,24 @@
 ﻿@page "/players"
 @rendermode InteractiveServer
 
-<h3 class="text-center my-4 text-primary">Players</h3>
+<h3 class="text-center my-4 text-primary">All Players</h3>
 @if (UserSession.CurrentUser != null)
 {
     <a class="btn btn-outline-primary mb-3" href="/players/create">Add Player</a>
 }
-<div class="mb-3">
-    <label for="teamFilter" class="form-label">Filter by Team:</label>
-    <select id="teamFilter" class="form-select" @onchange="FilterPlayersByTeam">
-        <option value="">All Teams</option>
-        @foreach (var team in _teams)
-        {
-            <option value="@team.Id">@team.Name</option>
-        }
-    </select>
+<div class="row">
+    <div class="col-3">
+        <div class="mb-3">
+            <label for="teamFilter" class="form-label">Filter by Team:</label>
+            <select id="teamFilter" class="form-select" @onchange="FilterPlayersByTeam">
+                <option value="">All Teams</option>
+                @foreach (var team in _teams)
+                {
+                    <option value="@team.Id">@team.Name</option>
+                }
+            </select>
+        </div>
+    </div>
 </div>
 
 <div class="table-responsive">

@@ -1,76 +1,74 @@
 ﻿@page "/league-table"
 @rendermode InteractiveServer
 
-<div class="container my-5">
-    <h3 class="text-center my-4 text-primary">Fantasy League Table</h3>
+<h3 class="text-center my-4 text-primary">Fantasy League Table</h3>
 
-    <!-- Season Filter -->
-    <div class="mb-4">
-        <label for="seasonFilter" class="form-label">Filter by Season:</label>
-        <select id="seasonFilter" class="form-select" @bind="SelectedSeasonId">
-            <option value="0">-- All Seasons --</option>
-            @foreach (var season in _seasons)
+<!-- Season Filter -->
+<div class="mb-4">
+    <label for="seasonFilter" class="form-label">Filter by Season:</label>
+    <select id="seasonFilter" class="form-select" @bind="SelectedSeasonId">
+        <option value="0">-- All Seasons --</option>
+        @foreach (var season in Seasons)
+        {
+            <option value="@season.Id">@season.Name (@season.StartDate.ToString("dd/MM/yyyy") - @season.EndDate.ToString("dd/MM/yyyy"))</option>
+        }
+    </select>
+</div>
+
+<div class="table-responsive shadow rounded">
+    <table class="table table-striped table-hover table-bordered align-middle">
+        <thead class="bg-primary text-white">
+            <tr>
+                <th class="text-center">Rank</th>
+                <th>Username</th>
+                <th class="text-center">Total Points</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (LeagueEntries.Any())
             {
-                <option value="@season.Id">@season.Name (@season.StartDate.ToString("dd/MM/yyyy") - @season.EndDate.ToString("dd/MM/yyyy"))</option>
-            }
-        </select>
-    </div>
-
-    <div class="table-responsive shadow rounded">
-        <table class="table table-striped table-hover table-bordered align-middle">
-            <thead class="bg-primary text-white">
-                <tr>
-                    <th class="text-center">Rank</th>
-                    <th>Username</th>
-                    <th class="text-center">Total Points</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (_leagueEntries.Any())
-                {
-                    @foreach (var (user, index) in _leagueEntries.Select((entry, i) => (entry, i + 1)))
-                    {
-                        <tr>
-                            <td class="text-center">
-                                @if (index == 1)
-                                {
-                                    <span class="badge bg-warning text-dark fs-6">🥇</span>
-                                }
-                                else if (index == 2)
-                                {
-                                    <span class="badge bg-secondary text-white fs-6">🥈</span>
-                                }
-                                else if (index == 3)
-                                {
-                                    <span class="badge bg-danger text-white fs-6">🥉</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-light text-dark">@index</span>
-                                }
-                            </td>
-                            <td>@user.Username</td>
-                            <td class="text-center">
-                                <span class="badge bg-success fs-5">@user.TotalPoints</span>
-                            </td>
-                        </tr>
-                    }
-                }
-                else
+                @foreach (var (user, index) in LeagueEntries.Select((entry, i) => (entry, i + 1)))
                 {
                     <tr>
-                        <td colspan="3" class="text-center text-muted">No data available</td>
+                        <td class="text-center">
+                            @if (index == 1)
+                            {
+                                <span class="badge bg-warning text-dark fs-6">🥇</span>
+                            }
+                            else if (index == 2)
+                            {
+                                <span class="badge bg-secondary text-white fs-6">🥈</span>
+                            }
+                            else if (index == 3)
+                            {
+                                <span class="badge bg-danger text-white fs-6">🥉</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-dark">@index</span>
+                            }
+                        </td>
+                        <td>@user.Username</td>
+                        <td class="text-center">
+                            <span class="badge bg-success fs-5">@user.TotalPoints</span>
+                        </td>
                     </tr>
                 }
-            </tbody>
-        </table>
-    </div>
+            }
+            else
+            {
+                <tr>
+                    <td colspan="3" class="text-center text-muted">No data available</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
 
 @code {
-    internal List<LeagueEntry> _leagueEntries = [];
-    internal List<Season> _seasons = [];
-    internal int SelectedSeasonId 
+    internal List<LeagueEntry> LeagueEntries = [];
+    internal List<Season> Seasons = [];
+    internal int SelectedSeasonId
     {
         get => _selectedSeasonId;
         set
@@ -84,11 +82,11 @@
     protected override async Task OnInitializedAsync()
     {
         // Load all seasons
-        _seasons = await DataService.GetAllAsync<Season>();
+        Seasons = await DataService.GetAllAsync<Season>();
         // Pre-select the current season
-        
+
         var today = DateTime.Today;
-        SelectedSeasonId = _seasons.FirstOrDefault(s => today >= s.StartDate && today <= s.EndDate)?.Id ?? 0;
+        SelectedSeasonId = Seasons.FirstOrDefault(s => today >= s.StartDate && today <= s.EndDate)?.Id ?? 0;
 
         // Load league data
         await LoadLeagueData();
@@ -105,7 +103,7 @@
         // Filter selections by season if a season is selected
         if (SelectedSeasonId != 0)
         {
-            var season = _seasons.FirstOrDefault(s => s.Id == SelectedSeasonId);
+            var season = Seasons.FirstOrDefault(s => s.Id == SelectedSeasonId);
             if (season != null)
             {
                 var matchesInSeason = await DataService.GetAllAsync<Match>();
@@ -126,7 +124,7 @@
         performanceStats = performanceStats.Where(ps => allMatchIds.Contains(ps.MatchId)).ToList();
 
         // Calculate total points for each user
-        _leagueEntries = users.Select(user =>
+        LeagueEntries = users.Select(user =>
         {
             var userSelections = allSelections.Where(s => s.UserId == user.Id).ToList();
             var totalPoints = 0;
@@ -157,7 +155,7 @@
 
         StateHasChanged();
     }
-    
+
     internal async void FilterBySeason()
     {
         // Reload all fantasy selections
@@ -166,7 +164,7 @@
         // Filter selections by season if a season is selected
         if (SelectedSeasonId != 0)
         {
-            var season = _seasons.FirstOrDefault(s => s.Id == SelectedSeasonId);
+            var season = Seasons.FirstOrDefault(s => s.Id == SelectedSeasonId);
             if (season != null)
             {
                 var matchesInSeason = await DataService.GetAllAsync<Match>();
@@ -188,7 +186,7 @@
 
         // Calculate total points for each user
         var users = await DataService.GetAllAsync<User>();
-        _leagueEntries = users.Select(user =>
+        LeagueEntries = users.Select(user =>
         {
             var userSelections = allSelections.Where(s => s.UserId == user.Id).ToList();
             var totalPoints = 0;
