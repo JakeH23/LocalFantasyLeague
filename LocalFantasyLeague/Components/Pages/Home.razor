@@ -9,7 +9,7 @@
         <div class="alert alert-warning">
             <h5 class="alert-heading">Actions Required</h5>
             <ul class="mb-0">
-                @if (_matchesToComplete.Any())
+                @if (isAdmin && _matchesToComplete.Any())
                 {
                     <li>
                         <strong>@_matchesToComplete.Count</strong> match(es) require stats entry.
@@ -430,6 +430,7 @@
     private List<Match> _matchesToComplete = [];
     private List<Match> _matchesNeedingSelections = [];
 
+    private bool isAdmin => UserSession.CurrentUser?.Admin ?? false;
     protected override async Task OnInitializedAsync()
     {
         // Fetch general data

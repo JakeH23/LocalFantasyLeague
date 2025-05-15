@@ -6,37 +6,37 @@
 <h4 class="text-info">Upcoming Matches</h4>
 @if (_upcomingMatches.Any())
 {
-<div class="table-responsive mb-5">
-    <table class="table table-striped table-hover table-bordered">
-        <thead class="bg-light text-dark">
-            <tr>
-                <th>Kickoff</th>
-                <th>Opponent</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var match in _upcomingMatches)
-            {
+    <div class="table-responsive mb-5">
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="bg-light text-dark">
                 <tr>
-                    <td>@match.Kickoff.ToString("d")</td>
-                    <td>@(match.HomeTeamId == UserSession.CurrentUser?.TeamId ? match.AwayTeam?.Name : match.HomeTeam?.Name)</td>
-                    <td>
-                        @if (_userFantasySelections.Any(selection => selection.MatchId == match.Id))
-                        {
-                            var selection = _userFantasySelections.First(s => s.MatchId == match.Id);
-                            <a href="/user-fantasy/edit/@selection.Id" class="btn btn-outline-warning btn-sm">Edit Team</a>
-                        }
-                        else
-                        {
-                            <a href="/user-fantasy/create/@match.Id" class="btn btn-outline-primary btn-sm">Pick Team</a>
-                        }
-                    </td>
+                    <th>Kickoff</th>
+                    <th>Opponent</th>
+                    <th>Actions</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-</div>
+            </thead>
+            <tbody>
+                @foreach (var match in _upcomingMatches)
+                {
+                    <tr>
+                        <td>@match.Kickoff.ToString("d")</td>
+                        <td>@(match.HomeTeamId == UserSession.CurrentUser?.TeamId ? match.AwayTeam?.Name : match.HomeTeam?.Name)</td>
+                        <td>
+                            @if (_userFantasySelections.Any(selection => selection.MatchId == match.Id))
+                            {
+                                var selection = _userFantasySelections.First(s => s.MatchId == match.Id);
+                                <a href="/user-fantasy/edit/@selection.Id" class="btn btn-outline-warning btn-sm">Edit Team</a>
+                            }
+                            else
+                            {
+                                <a href="/user-fantasy/create/@match.Id" class="btn btn-outline-primary btn-sm">Pick Team</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 else
 {
@@ -137,7 +137,7 @@ else
 
         // Split matches into upcoming and past
         var now = DateTime.Now;
-        _upcomingMatches = _matches.Where(m => m.Kickoff >= now).ToList();
+        _upcomingMatches = _matches.Where(m => m.Kickoff >= now).OrderBy(m => m.Kickoff).ToList();
         _pastMatches = _matches.Where(m => m.Kickoff < now).ToList();
 
         // Load user fantasy selections

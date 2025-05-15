@@ -22,7 +22,7 @@
                     <td>@season.Name</td>
                     <td>@($"{season.StartDate:MMM dd, yyyy} - {season.EndDate:MMM dd, yyyy}")</td>
                     <td>
-                        @if (UserSession.CurrentUser == null)
+                        @if (UserSession.CurrentUser == null || !UserSession.CurrentUser.Admin)
                         {
                             <a href="/seasons/details/@season.Id" class="btn btn-outline-info btn-sm me-2">Details</a>
                         }

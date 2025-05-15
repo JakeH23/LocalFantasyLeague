@@ -2,15 +2,12 @@
 @rendermode InteractiveServer
 
 <h3 class="text-center my-4 text-primary">All Players</h3>
-@if (UserSession.CurrentUser != null)
-{
-    <a class="btn btn-outline-primary mb-3" href="/players/create">Add Player</a>
-}
 <div class="row">
     <div class="col-3">
+        <!-- Team Filter -->
         <div class="mb-3">
             <label for="teamFilter" class="form-label">Filter by Team:</label>
-            <select id="teamFilter" class="form-select" @onchange="FilterPlayersByTeam">
+            <select id="teamFilter" class="form-select" @bind="SelectedTeamId">
                 <option value="">All Teams</option>
                 @foreach (var team in _teams)
                 {
@@ -19,6 +16,12 @@
             </select>
         </div>
     </div>
+    @if (UserSession.CurrentUser != null)
+    {
+        <div class="col-3">
+            <a class="btn btn-outline-primary mb-3" style="margin-top: 31px" href="/players/create">Add Player</a>
+        </div>
+    }
 </div>
 
 <div class="table-responsive">
@@ -37,7 +40,7 @@
                     <td>@p.Name</td>
                     <td>@p.Team?.Name</td>
                     <td>
-                        @if (UserSession.CurrentUser == null)
+                        @if (UserSession.CurrentUser == null || !UserSession.CurrentUser.Admin)
                         {
                             <a href="/players/details/@p.Id" class="btn btn-outline-info btn-sm">Details</a>
                         }
@@ -58,7 +61,17 @@
     private List<Player> _players = [];
     private List<Player> _filteredPlayers = [];
     private List<Team> _teams = [];
-    private int? _selectedTeamId;
+    internal int? SelectedTeamId
+    {
+        get => _selectedTeamIdBackingField;
+        set
+        {
+            _selectedTeamIdBackingField = value;
+            ApplyFilters();
+        }
+    }
+
+    internal int? _selectedTeamIdBackingField;
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,22 +79,20 @@
 
         _teams = await DataService.GetAllAsync<Team>();
 
+        SelectedTeamId = UserSession.CurrentUser?.TeamId ?? null;
+
         _filteredPlayers = _players; // Initially show all players
     }
 
-    private void FilterPlayersByTeam(ChangeEventArgs e)
+    internal void ApplyFilters()
     {
-        if (int.TryParse(e.Value?.ToString(), out var teamId))
+        _filteredPlayers = _players;
+
+        if (SelectedTeamId.HasValue)
         {
-            _selectedTeamId = teamId;
-            _filteredPlayers = _players.Where(p => p.TeamId == teamId).ToList();
-        }
-        else
-        {
-            _selectedTeamId = null;
-            _filteredPlayers = _players; // Show all players if no team is selected
+            _filteredPlayers = _filteredPlayers.Where(p => p.TeamId == SelectedTeamId).ToList();
         }
 
-        StateHasChanged();
+        InvokeAsync(StateHasChanged);
     }
 }

@@ -2,10 +2,6 @@
 @rendermode InteractiveServer
 
 <h3 class="text-center my-4 text-primary">All Matches</h3>
-@if (UserSession.CurrentUser != null)
-{
-    <a href="/matches/create" class="btn btn-outline-primary mb-3">Add Match</a>
-}
 
 <div class="row">
     <div class="col-3">
@@ -35,6 +31,13 @@
             </select>
         </div>
     </div>
+    @if (UserSession.CurrentUser != null)
+    {
+        <div class="col-3">
+            <a href="/matches/create" class="btn btn-outline-primary mb-3" style="margin-top: 31px;">Add Match</a>
+
+        </div>
+    }
 </div>
 
 <div class="table-responsive">
@@ -66,7 +69,7 @@
                         }
                     </td>
                     <td>
-                        @if (UserSession.CurrentUser == null)
+                        @if (UserSession.CurrentUser == null || !UserSession.CurrentUser.Admin)
                         {
                             <a href="/matches/details/@match.Id" class="btn btn-outline-info btn-sm">Details</a>
                         }

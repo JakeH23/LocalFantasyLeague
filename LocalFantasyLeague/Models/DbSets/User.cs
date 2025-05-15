@@ -14,5 +14,6 @@
 
         // Navigation property for the associated Team
         public Team? Team { get; set; }
+        public bool Admin { get; set; } = false;
     }
 }

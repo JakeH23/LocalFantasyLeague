@@ -19,7 +19,7 @@
                 <tr>
                     <td>@team.Name</td>
                     <td>
-                        @if (UserSession.CurrentUser == null)
+                        @if (UserSession.CurrentUser == null || !UserSession.CurrentUser.Admin)
                         {
                             <a href="/teams/details/@team.Id" class="btn btn-outline-info btn-sm">Details</a>
                         }

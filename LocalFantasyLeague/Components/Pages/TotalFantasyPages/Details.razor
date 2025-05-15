@@ -10,10 +10,10 @@
         <div class="mb-3">
             <label for="seasonFilter" class="form-label">Filter by Season:</label>
             <select id="seasonFilter" class="form-select" @bind="SelectedSeasonId">
-                <option value="0">-- All Seasons --</option>
+                <option value="">All Seasons</option>
                 @foreach (var season in _seasons)
                 {
-                    <option value="@season.Id">@season.Name (@season.StartDate.ToString("dd/MM/yyyy") - @season.EndDate.ToString("dd/MM/yyyy"))</option>
+                    <option value="@season.Id">@season.Name (@season.StartDate.ToString("MMM dd, yyyy") - @season.EndDate.ToString("MMM dd, yyyy"))</option>
                 }
             </select>
         </div>
@@ -22,7 +22,7 @@
         <!-- Team Filter -->
         <div class="mb-3">
             <label for="teamFilter" class="form-label">Filter by Team:</label>
-            <select id="teamFilter" class="form-select" @onchange="FilterPlayersByTeam">
+            <select id="teamFilter" class="form-select" @bind="SelectedTeamId">
                 <option value="">All Teams</option>
                 @foreach (var team in _teams)
                 {
@@ -102,17 +102,28 @@
     private List<PlayerWithPoints> _filteredPlayersWithPoints = [];
     private List<Team> _teams = [];
     private List<Season> _seasons = [];
-    private int? _selectedTeamId;
-    private int SelectedSeasonId
+    internal int? SelectedSeasonId
     {
-        get => _selectedSeasonId;
+        get => _selectedSeasonIdBackingField;
         set
         {
-            _selectedSeasonId = value;
-            FilterPlayersBySeason();
+            _selectedSeasonIdBackingField = value;
+            ApplyFilters();
         }
     }
-    private int _selectedSeasonId = 0;
+    internal int? SelectedTeamId
+    {
+        get => _selectedTeamIdBackingField;
+        set
+        {
+            _selectedTeamIdBackingField = value;
+            ApplyFilters();
+        }
+    }
+
+    internal int? _selectedSeasonIdBackingField;
+    internal int? _selectedTeamIdBackingField;
+
     private string _currentSortColumn = "";
     private bool _isSortAscending = false;
 
@@ -122,6 +133,11 @@
 
         _teams = await DataService.GetAllAsync<Team>();
         _seasons = await DataService.GetAllAsync<Season>();
+
+        SelectedTeamId = UserSession.CurrentUser?.TeamId ?? null;
+
+        var today = DateTime.Now;
+        SelectedSeasonId = _seasons.FirstOrDefault(season => today >= season.StartDate && today <= season.EndDate)?.Id;
 
         _playersWithPoints = players.Select(player =>
         {
@@ -155,29 +171,18 @@
         SortPlayersTable("TotalPoints");
     }
 
-    private void FilterPlayersByTeam(ChangeEventArgs e)
+    internal async Task ApplyFilters()
     {
-        if (int.TryParse(e.Value?.ToString(), out var teamId))
+        _filteredPlayersWithPoints = _playersWithPoints;
+
+        if (SelectedTeamId.HasValue)
         {
-            _selectedTeamId = teamId;
-            _filteredPlayersWithPoints = _playersWithPoints
-                .Where(p => p.TeamId == teamId)
+            _filteredPlayersWithPoints = _filteredPlayersWithPoints
+                .Where(p => p.TeamId == SelectedTeamId)
                 .ToList();
         }
-        else
-        {
-            _selectedTeamId = null;
-            _filteredPlayersWithPoints = _playersWithPoints; // Show all players if no team is selected
-        }
 
-        _currentSortColumn = "TotalPoints";
-        SortPlayersTable("TotalPoints");
-        StateHasChanged(); // Notify Blazor to re-render the UI
-    }
-
-    private async void FilterPlayersBySeason()
-    {
-        if (SelectedSeasonId != 0)
+        if (SelectedSeasonId.HasValue)
         {
             // Get the selected season
             var season = _seasons.FirstOrDefault(s => s.Id == SelectedSeasonId);
@@ -211,8 +216,8 @@
                                 CleanSheets = filteredStats.Count(stat => stat.CleanSheet),
                                 PenaltyMissed = filteredStats.Sum(stat => stat.PenaltyMissed),
                                 AveragePointsPerGame = filteredStats.Count(stat => stat.Appearance) > 0
-                                        ? Math.Round(totalPoints / (double)filteredStats.Count(stat => stat.Appearance), 1)
-                                    : 0.0,
+                                            ? Math.Round(totalPoints / (double)filteredStats.Count(stat => stat.Appearance), 1)
+                                        : 0.0,
                                 TotalPoints = PointCalculator.CalculateTotalPoints(filteredStats)
                             };
                     })
@@ -220,15 +225,10 @@
                     .ToList();
             }
         }
-        else
-        {
-            // Show all players if no season is selected
-            _filteredPlayersWithPoints = _playersWithPoints;
-        }
 
         _currentSortColumn = "TotalPoints";
         SortPlayersTable("TotalPoints");
-        StateHasChanged(); // Notify Blazor to re-render the UI
+        InvokeAsync(StateHasChanged);
     }
 
     private void SortPlayersTable(string columnName)
