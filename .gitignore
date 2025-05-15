@@ -1,11 +1,60 @@
 ﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+# .gitignore for Blazor (.NET 8) projects in Visual Studio
 ################################################################################
 
-/LocalFantasyLeagueTests/obj
-/.vs/LocalFantasyLeague
-/LocalFantasyLeagueTests/bin/Debug/net8.0
-/obj
-/.vs/ProjectEvaluation
-/LocalFantasyLeague/.config
-/Properties
+# Build results
+**/bin/
+**/obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio working folders
+.vs/
+.vscode/
+
+# ASP.NET/Blazor generated files
+wwwroot/dist/
+wwwroot/node_modules/
+wwwroot/lib/
+
+# Configuration files
+appsettings.Development.json
+appsettings.Local.json
+
+# Dotnet tool manifest
+**/.config/dotnet-tools.json
+
+# Local test results
+TestResults/
+*.trx
+*.coverage
+*.coveragejson
+
+# NCrunch
+*.ncrunch*
+_NCrunch_*
+
+# Rider
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+
+# Ignore local secrets
+secrets.json
+
+# Ignore publish output
+**/publish/
+
+################################################################################
+# End of .gitignore
+################################################################################
