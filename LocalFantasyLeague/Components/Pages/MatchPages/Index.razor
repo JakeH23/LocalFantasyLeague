@@ -59,26 +59,41 @@
                     <td>@match.HomeTeam.Name</td>
                     <td>@match.AwayTeam.Name</td>
                     <td>
-                        @if (match.Kickoff < DateTime.Now)
-                        {
-                            <span class="badge bg-success">@match.HomeTeamGoals - @match.AwayTeamGoals</span>
-                        }
-                        else
-                        {
+                            @if (match.Kickoff < DateTime.Now)
+                            {
+                                if (UserSession.CurrentUser != null && _userTeam != null && (match.HomeTeamId == _userTeam.Id || match.AwayTeamId == _userTeam.Id))
+                                {
+                                    bool isHome = match.HomeTeamId == _userTeam.Id;
+                                    int goalsFor = isHome ? match.HomeTeamGoals : match.AwayTeamGoals;
+                                    int goalsAgainst = isHome ? match.AwayTeamGoals : match.HomeTeamGoals;
+                                    string badgeClass = goalsFor > goalsAgainst
+                                    ? "bg-success"
+                                    : goalsFor == goalsAgainst
+                                    ? "bg-warning text-dark"
+                                    : "bg-danger";
+                                <span class="badge @badgeClass">@match.HomeTeamGoals - @match.AwayTeamGoals</span>
+                                }
+                                else
+                                {
+                                <span class="badge bg-secondary">@match.HomeTeamGoals - @match.AwayTeamGoals</span>
+                                }
+                            }
+                            else
+                            {
                             <span class="text-muted">TBD</span>
-                        }
+                            }
                     </td>
                     <td>
-                        @if (UserSession.CurrentUser == null || !UserSession.CurrentUser.Admin)
-                        {
+                            @if (UserSession.CurrentUser == null || !UserSession.CurrentUser.Admin)
+                            {
                             <a href="/matches/details/@match.Id" class="btn btn-outline-info btn-sm">Details</a>
-                        }
-                        else
-                        {
+                            }
+                            else
+                            {
                             <a href="/matches/details/@match.Id" class="btn btn-outline-info btn-sm me-2">Details</a>
                             <a href="/matches/edit/@match.Id" class="btn btn-outline-warning btn-sm me-2">Edit</a>
                             <a href="/matches/delete/@match.Id" class="btn btn-outline-danger btn-sm">Delete</a>
-                        }
+                            }
                     </td>
                 </tr>
             }
@@ -141,6 +156,7 @@
     internal int TotalPages => (int)Math.Ceiling((double)_filteredMatches.Count / PageSize);
     internal bool IsFirstPage => _currentPage == 1;
     internal bool IsLastPage => _currentPage >= TotalPages;
+    private Team? _userTeam;
 
     protected override async Task OnInitializedAsync()
     {
@@ -148,6 +164,12 @@
 
         _teams = await DataService.GetAllAsync<Team>();
         _seasons = await DataService.GetAllAsync<Season>();
+
+        // Get the user's team if logged in
+        if (UserSession.CurrentUser?.TeamId != null)
+        {
+            _userTeam = _teams.FirstOrDefault(t => t.Id == UserSession.CurrentUser.TeamId);
+        }
 
         SelectedTeamId = UserSession.CurrentUser?.TeamId ?? null;
 

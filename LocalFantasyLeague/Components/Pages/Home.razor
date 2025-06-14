@@ -429,16 +429,22 @@
 
     private List<Match> _matchesToComplete = [];
     private List<Match> _matchesNeedingSelections = [];
+    private Season? _currentSeason;
 
     private bool isAdmin => UserSession.CurrentUser?.Admin ?? false;
     protected override async Task OnInitializedAsync()
     {
+        // Fetch all seasons and determine the current one
+        var allSeasons = await DataService.GetAllAsync<Season>();
+        var today = DateTime.Now;
+        _currentSeason = allSeasons.FirstOrDefault(s => today >= s.StartDate && today <= s.EndDate);
+
         // Fetch general data
-        _recentMatches = await MatchService.GetPreviousFiveMatches();
+        _recentMatches = await MatchService.GetPreviousFiveMatchesForCurrentSeason(_currentSeason.Id);
 
-        _upcomingFixtures = await MatchService.GetNextFiveMatches();
+        _upcomingFixtures = await MatchService.GetNextFiveMatchesForCurrentSeason(_currentSeason.Id);
 
-        _topScorers = await PerformanceStatService.GetTopThreeFantasyPointScorers();
+        _topScorers = await PerformanceStatService.GetTopThreeFantasyPointScorersForCurrentSeason(_currentSeason.Id);
 
         if (UserSession.CurrentUser == null)
         {
@@ -480,11 +486,11 @@
         // Fetch team-specific data
         if (teamId != null)
         {
-            _teamRecentMatches = await MatchService.GetPreviousFiveMatchesByTeamId(teamId.Value);
+            _teamRecentMatches = await MatchService.GetPreviousFiveMatchesByTeamIdAndSeasonId(teamId.Value, _currentSeason.Id);
 
-            _teamUpcomingFixtures = await MatchService.GetNextFiveMatchesByTeamId(teamId.Value);
+            _teamUpcomingFixtures = await MatchService.GetNextFiveMatchesByTeamIdAndSeasonId(teamId.Value, _currentSeason.Id);
 
-            _teamTopScorers = await PerformanceStatService.GetTopThreeFantasyPointScorersByTeamId(teamId.Value);
+            _teamTopScorers = await PerformanceStatService.GetTopThreeFantasyPointScorersByTeamIdAndSeasonId(teamId.Value, _currentSeason.Id);
 
             // Load matches requiring stats entry
             _matchesToComplete = await MatchService.GetMatchListRequiringStatsToBeEntered();
@@ -493,6 +499,12 @@
             var userSelections = await UserFantasySelectionService.GetUserFantasySelectionListOfMatchIdsFilteredByUserId(UserSession.CurrentUser.Id);
 
             _matchesNeedingSelections = await MatchService.GetMatchListForNextSevenDaysRequiringFantasyPicks(userSelections);
+        }
+        else
+        {
+            _teamRecentMatches = new();
+            _teamUpcomingFixtures = new();
+            _teamTopScorers = new();
         }
     }
 }

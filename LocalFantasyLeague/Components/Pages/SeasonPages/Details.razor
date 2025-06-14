@@ -31,6 +31,47 @@ else
                 </dl>
             </div>
         </div>
+        <!-- User Team Summary -->
+        @if (UserSession.CurrentUser != null && _userTeam != null)
+        {
+            <div class="card mb-4 shadow-sm border-info">
+                <div class="card-header bg-info text-white d-flex align-items-center">
+                    <h4 class="mb-0 flex-grow-1">@_userTeam.Name <span class="fw-light" style="font-size:1rem;">Season Summary</span></h4>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-3">
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded bg-success text-white fw-bold fs-5">Wins</div>
+                            <div class="fs-4">@_wins</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded bg-warning text-dark fw-bold fs-5">Draws</div>
+                            <div class="fs-4">@_draws</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded bg-danger text-white fw-bold fs-5">Losses</div>
+                            <div class="fs-4">@_losses</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 rounded bg-primary text-white fw-bold fs-5">Total Points</div>
+                            <div class="fs-4">@_points</div>
+                        </div>
+                        <div class="col-4 col-md-4 mt-3">
+                            <div class="p-3 rounded bg-secondary text-white fw-bold fs-5">GF</div>
+                            <div class="fs-4">@_goalsFor</div>
+                        </div>
+                        <div class="col-4 col-md-4 mt-3">
+                            <div class="p-3 rounded bg-secondary text-white fw-bold fs-5">GA</div>
+                            <div class="fs-4">@_goalsAgainst</div>
+                        </div>
+                        <div class="col-4 col-md-4 mt-3">
+                            <div class="p-3 rounded bg-secondary text-white fw-bold fs-5">GD</div>
+                            <div class="fs-4">@(_goalsFor - _goalsAgainst)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
 
         <!-- Matches -->
         <div class="card">
@@ -60,7 +101,22 @@ else
                                         <td>
                                             @if (match.Kickoff < DateTime.Now)
                                             {
-                                                <span class="badge bg-success">@match.HomeTeamGoals - @match.AwayTeamGoals</span>
+                                                if (_userTeam != null && (match.HomeTeamId == _userTeam.Id || match.AwayTeamId == _userTeam.Id))
+                                                {
+                                                    bool isHome = match.HomeTeamId == _userTeam.Id;
+                                                    int goalsFor = isHome ? match.HomeTeamGoals : match.AwayTeamGoals;
+                                                    int goalsAgainst = isHome ? match.AwayTeamGoals : match.HomeTeamGoals;
+                                                    string badgeClass = goalsFor > goalsAgainst
+                                                    ? "bg-success"
+                                                    : goalsFor == goalsAgainst
+                                                    ? "bg-warning text-dark"
+                                                    : "bg-danger";
+                                                    <span class="badge @badgeClass">@match.HomeTeamGoals - @match.AwayTeamGoals</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">@match.HomeTeamGoals - @match.AwayTeamGoals</span>
+                                                }
                                             }
                                             else
                                             {
@@ -85,6 +141,8 @@ else
 @code {
     private Season? _season;
     private List<Match> _matches = [];
+    private Team? _userTeam;
+    private int _wins, _draws, _losses, _points, _goalsFor, _goalsAgainst;
 
     [Parameter]
     public int Id { get; set; }
@@ -96,6 +154,52 @@ else
         if (_season != null)
         {
             _matches = await MatchService.GetMatchListIncludingTeamsFilteredBySeasonId(_season.Id);
+
+            if (UserSession.CurrentUser != null)
+            {
+                _userTeam = await TeamService.GetCurrentUserTeamForSeason(_season.Id, UserSession.CurrentUser?.TeamId);
+                CalculateSeasonSummary();
+            }
+        }
+    }
+
+    private void CalculateSeasonSummary()
+    {
+        _wins = 0;
+        _draws = 0;
+        _losses = 0;
+        _points = 0;
+        _goalsFor = 0;
+        _goalsAgainst = 0;
+
+        if (_userTeam == null) return;
+
+        foreach (var match in _matches.Where(m => m.Kickoff < DateTime.Now))
+        {
+            bool isHome = match.HomeTeamId == _userTeam.Id;
+            bool isAway = match.AwayTeamId == _userTeam.Id;
+            if (!isHome && !isAway) continue;
+
+            int goalsFor = isHome ? match.HomeTeamGoals : match.AwayTeamGoals;
+            int goalsAgainst = isHome ? match.AwayTeamGoals : match.HomeTeamGoals;
+
+            _goalsFor += goalsFor;
+            _goalsAgainst += goalsAgainst;
+
+            if (goalsFor > goalsAgainst)
+            {
+                _wins++;
+                _points += 2;
+            }
+            else if (goalsFor == goalsAgainst)
+            {
+                _draws++;
+                _points += 1;
+            }
+            else
+            {
+                _losses++;
+            }
         }
     }
 }

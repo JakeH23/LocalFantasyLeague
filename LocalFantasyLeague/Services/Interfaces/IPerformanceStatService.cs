@@ -10,4 +10,6 @@ public interface IPerformanceStatService
     Task<PerformanceStat?> GetPerformanceStatFilteredByPlayerId(int playerId);
     Task<List<FantasyScorer>> GetTopThreeFantasyPointScorers();
     Task<List<FantasyScorer>> GetTopThreeFantasyPointScorersByTeamId(int teamId);
+    Task<List<FantasyScorer>> GetTopThreeFantasyPointScorersForCurrentSeason(int seasonId);
+    Task<List<FantasyScorer>> GetTopThreeFantasyPointScorersByTeamIdAndSeasonId(int teamId, int seasonId);
 }

@@ -122,6 +122,7 @@ else
     private readonly Dictionary<int, Dictionary<int, int>> _playerPoints = new();
     private readonly Dictionary<int, int> _gameTotalPoints = new();
     private int _overallTotalPoints = 0;
+    private Season? _currentSeason;
 
     protected override async Task OnInitializedAsync()
     {
@@ -131,12 +132,20 @@ else
             return;
         }
         ;
+        // Fetch all seasons and determine the current one
+        var allSeasons = await DataService.GetAllAsync<Season>();
+        var now = DateTime.Now;
+        _currentSeason = allSeasons.FirstOrDefault(s => now >= s.StartDate && now <= s.EndDate);
 
         // Load matches
         _matches = await MatchService.GetMatchListIncludingTeamsForCurrentUserTeamId(UserSession.CurrentUser.TeamId.Value);
 
+        if (_currentSeason != null)
+        {
+            _matches = _matches.Where(m => m.SeasonId == _currentSeason.Id).ToList();
+        }
+
         // Split matches into upcoming and past
-        var now = DateTime.Now;
         _upcomingMatches = _matches.Where(m => m.Kickoff >= now).OrderBy(m => m.Kickoff).ToList();
         _pastMatches = _matches.Where(m => m.Kickoff < now).ToList();
 

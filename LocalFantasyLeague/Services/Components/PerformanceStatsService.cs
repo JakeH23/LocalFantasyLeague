@@ -85,5 +85,58 @@ namespace LocalFantasyLeague.Services.Components
                 .ToList(),
                 $"Error fetching top three fantasy point scorers for team ID: {teamId}.");
         }
+
+        public async Task<List<FantasyScorer>> GetTopThreeFantasyPointScorersForCurrentSeason(int seasonId)
+        {
+            return await _componentService.ExecuteQuery(async context =>
+                (await context.PerformanceStats
+                        .AsNoTracking()
+                        .Include(ps => ps.Player)
+                        .Include(ps => ps.Match)
+                        .Where(ps => ps.Match!.SeasonId == seasonId)
+                        .GroupBy(ps => ps.PlayerId)
+                        .Select(g => new
+                        {
+                            PlayerId = g.Key,
+                            Name = g.First().Player!.Name,
+                            PerformanceStats = g.ToList()
+                        })
+                        .ToListAsync()
+                )
+                .Select(g => new FantasyScorer
+                {
+                    PlayerId = g.PlayerId,
+                    Name = g.Name,
+                    FantasyPoints = PointCalculator.CalculateTotalPoints(g.PerformanceStats)
+                })
+                .OrderByDescending(fs => fs.FantasyPoints)
+                .Take(3)
+                .ToList(),
+                $"Error fetching top three fantasy point scorers for season ID: {seasonId}");
+        }
+
+        public async Task<List<FantasyScorer>> GetTopThreeFantasyPointScorersByTeamIdAndSeasonId(int teamId, int seasonId)
+        {
+            return await _componentService.ExecuteQuery(async context =>
+                (await context.PerformanceStats
+                        .AsNoTracking()
+                        .Include(ps => ps.Player)
+                        .Include(ps => ps.Match)
+                        .Where(ps => ps.Player!.TeamId == teamId && ps.Match!.SeasonId == seasonId)
+                        .GroupBy(ps => ps.PlayerId)
+                        .Select(g => new { PlayerId = g.Key, Name = g.First().Player!.Name, PerformanceStats = g.ToList() })
+                        .ToListAsync()
+                )
+                .Select(g => new FantasyScorer
+                {
+                    PlayerId = g.PlayerId,
+                    Name = g.Name,
+                    FantasyPoints = PointCalculator.CalculateTotalPoints(g.PerformanceStats)
+                })
+                .OrderByDescending(fs => fs.FantasyPoints)
+                .Take(3)
+                .ToList(),
+                $"Error fetching top three fantasy point scorers for team ID: {teamId}.");
+        }
     }
 }

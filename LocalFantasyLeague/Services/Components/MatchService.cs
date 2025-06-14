@@ -160,6 +160,34 @@ namespace LocalFantasyLeague.Services.Components
                 $"Error fetching next five matches for team ID: {teamId}");
         }
 
+        public async Task<List<Match>> GetPreviousFiveMatchesForCurrentSeason(int seasonId)
+        {
+            return await _componentService.ExecuteQuery(async context =>
+                await context.Matches
+                    .AsNoTracking()
+                    .Include(m => m.HomeTeam)
+                    .Include(m => m.AwayTeam)
+                    .Where(m => m.SeasonId == seasonId && m.Kickoff < DateTime.Now)
+                    .OrderByDescending(m => m.Kickoff)
+                    .Take(5)
+                    .ToListAsync(),
+                $"Error fetching previous five matches for season ID: {seasonId}");
+        }
+
+        public async Task<List<Match>> GetNextFiveMatchesForCurrentSeason(int seasonId)
+        {
+            return await _componentService.ExecuteQuery(async context =>
+                await context.Matches
+                    .AsNoTracking()
+                    .Include(m => m.HomeTeam)
+                    .Include(m => m.AwayTeam)
+                    .Where(m => m.SeasonId == seasonId && m.Kickoff > DateTime.Now)
+                    .OrderBy(m => m.Kickoff)
+                    .Take(5)
+                    .ToListAsync(),
+                $"Error fetching next five matches for season ID: {seasonId}");
+        }
+
         public async Task<List<Match>> GetMatchListRequiringStatsToBeEntered()
         {
             return await _componentService.ExecuteQuery(async context =>
@@ -184,6 +212,38 @@ namespace LocalFantasyLeague.Services.Components
                     .Where(m => !matchIds.Contains(m.Id))
                     .ToListAsync(),
                 "Error fetching matches for the next seven days requiring fantasy picks.");
+        }
+
+        public async Task<List<Match>> GetPreviousFiveMatchesByTeamIdAndSeasonId(int teamId, int seasonId)
+        {
+            return await _componentService.ExecuteQuery(async context =>
+                await context.Matches
+                    .AsNoTracking()
+                    .Include(m => m.HomeTeam)
+                    .Include(m => m.AwayTeam)
+                    .Where(m => m.Kickoff < DateTime.Now
+                         && m.SeasonId == seasonId
+                         && (m.HomeTeamId == teamId || m.AwayTeamId == teamId))
+                    .OrderByDescending(m => m.Kickoff)
+                    .Take(5)
+                    .ToListAsync(),
+                $"Error fetching previous five matches for team ID: {teamId}");
+        }
+
+        public async Task<List<Match>> GetNextFiveMatchesByTeamIdAndSeasonId(int teamId, int seasonId)
+        {
+            return await _componentService.ExecuteQuery(async context =>
+                await context.Matches
+                    .AsNoTracking()
+                    .Include(m => m.HomeTeam)
+                    .Include(m => m.AwayTeam)
+                    .Where(m => m.Kickoff > DateTime.Now
+                        && m.SeasonId == seasonId
+                        && (m.HomeTeamId == teamId || m.AwayTeamId == teamId))
+                    .OrderBy(m => m.Kickoff)
+                    .Take(5)
+                    .ToListAsync(),
+                $"Error fetching next five matches for team ID: {teamId}");
         }
     }
 }
